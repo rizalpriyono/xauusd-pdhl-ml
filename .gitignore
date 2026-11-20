@@ -1,0 +1,19 @@
+# Hanya XAUUSD_H1.csv yang disimpan dari data/raw; semua keluaran run tidak disimpan di repo
+data/raw/*
+!data/raw/README.md
+!data/raw/XAUUSD_H1.csv
+runs/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+
+# Sistem / editor
+.DS_Store
+.idea/
+.vscode/

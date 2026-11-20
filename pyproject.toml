@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pdhl-data"
+version = "1.0.0"
+description = "Pipeline data PDH/PDL XAUUSD H1: data mentah -> event -> split + kunci uji -> label triple barrier"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = []          # hanya stdlib; di Windows tambahkan paket `tzdata` untuk zoneinfo
+
+[project.scripts]
+pdhl-data = "pdhl_data.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

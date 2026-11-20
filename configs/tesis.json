@@ -1,0 +1,28 @@
+{
+  "name": "tesis",
+  "judul": "Tesis: DSS reversal/continuation/no-trade pada sentuhan pertama PDH/PDL XAUUSD H1",
+  "label": {
+    "a": 2.0,
+    "b": 1.0,
+    "T": 8,
+    "k": 0,
+    "tanggal_kunci": "2026-11-07",
+    "sumber": "Kunci-1: nilai cadangan Tabel 4.2 (Proposal Final v2, IV.I.4); lihat KUNCI-1_parameter_label.md"
+  },
+  "expected_valid": {"dev": 1841, "calib": 227, "test": 341},
+  "lock": {
+    "manifest": "MANIFEST_KUNCI_UJI.json",
+    "kunci_key": "kunci_1",
+    "dibuka_pada": "Kunci-2",
+    "aturan": "Data uji tidak dipakai untuk label, fitur, model, atau analisis sebelum Kunci-2 (Proposal Final v2, IV.II.11)."
+  },
+  "report": {"sample_seed": 20261107},
+  "rujukan": {
+    "label": "IV.II.3",
+    "R": "Tabel 4.3",
+    "pembagian": "IV.II.4",
+    "kalibrasi": "IV.II.7",
+    "keputusan": "IV.II.8 (RM-27)",
+    "deskriptif": "IV.IV.3"
+  }
+}
