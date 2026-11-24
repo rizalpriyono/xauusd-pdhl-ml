@@ -1,0 +1,5 @@
+# Dependensi tahap walk-forward Gradient Boosting (sama dengan `pip install -e '.[model]'`).
+# Versi dipin sama dengan lingkungan hasil lama (22 Nov 2026) agar angka bisa dibandingkan.
+lightgbm==4.7.0
+numpy==2.2.6
+scipy==1.15.3
