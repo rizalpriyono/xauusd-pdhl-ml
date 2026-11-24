@@ -49,7 +49,8 @@ def write_report(path, k, horizon, bronze, bars, dq, break_by_year, sessions, ev
     add(_table(["Langkah", "Bar dibuang"], [
         ("Duplikat timestamp", dq["duplikat"]),
         ("OHLC tidak konsisten (low > min(open, close) dst.)", dq["ohlc_tidak_valid"]),
-        (f"Sesi sebelum {WARMUP_START} (di luar periode pemanasan)", dq["sebelum_warmup"]),
+        (f"Sesi sebelum {WARMUP_START} (hanya riwayat pemanasan, tidak masuk silver)",
+         dq["sebelum_warmup"]),
         ("Bar pada jam jeda 17.00 NY", dq["bar_jeda_17_ny"]),
     ]))
     add("\nBar jam 17.00 NY yang dibuang per tahun: "
@@ -59,7 +60,9 @@ def write_report(path, k, horizon, bronze, bars, dq, break_by_year, sessions, ev
         "*candle* pertama sesi dan mengganggu aturan \"dibuka di luar level\".\n")
     add(f"Silver berisi **{len(bars):,} bar** ({bars[0]['ts_ny']:%Y-%m-%d %H:%M} s.d. "
         f"{bars[-1]['ts_ny']:%Y-%m-%d %H:%M} NY) dan **{len(sessions):,} sesi**. "
-        "Data 2015 hanya dipakai untuk pemanasan ATR(14) H1 dan ATR(14) harian.\n")
+        f"Bar sebelum {WARMUP_START} (sejak {bronze[0]['ts_utc']:%Y-%m-%d}) dipakai hanya sebagai "
+        "riwayat TR/ATR(14) H1, ATR(14) harian, dan PDH/PDL sesi pertama, sehingga indikator sudah "
+        "terisi sejak bar silver pertama. Data 2015 tetap periode pemanasan tanpa event.\n")
 
     add("## 3. Verifikasi zona waktu (IV.II.1)\n")
     add("Timestamp dikonversi UTC → America/New_York (zoneinfo, DST otomatis). Untuk setiap pergantian "

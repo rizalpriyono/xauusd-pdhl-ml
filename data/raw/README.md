@@ -8,7 +8,7 @@ menjalankan pipeline. `.gitattributes` menandainya `binary` agar git tidak mengu
 | Berkas | `XAUUSD_H1.csv` (6,1 MB) |
 | Sumber | Ekspor data H1 XAUUSD dari Blue Capital Trading (MetaTrader), disertakan untuk reproduksi penelitian |
 | SHA-256 | `e4ae9238f177fc7d09555f8e23762456641636fa510b321105745f58e840bfdb` |
-| Rentang | 16 Nov 2009 – 31 Jul 2026, 100.000 bar. Pipeline membuang bar sebelum 2015; 2015 hanya untuk pemanasan ATR |
+| Rentang | 16 Nov 2009 – 31 Jul 2026, 100.000 bar. Bar sebelum 2015 hanya menjadi riwayat pemanasan ATR dan PDH/PDL (tidak masuk silver); 2015 adalah periode pemanasan tanpa event |
 | Format | UTC, dipisah tab, header 6 nama tetapi 7 kolom per baris: `Time, Open, High, Low, Close, BarMinutes, TickVolume` |
 
 Berkas ini juga memuat periode uji (2025 – Jul 2026). Kerahasiaan data uji dijaga di tingkat label dan
