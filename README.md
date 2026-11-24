@@ -4,7 +4,8 @@
 
 Pipeline data untuk penelitian tesis tentang *first touch* Previous-Day High/Low (PDH/PDL) pada XAUUSD H1.
 Pipeline ini mengolah data mentah sampai menjadi data berlabel *triple barrier*, siap dipakai eksperimen model
-(**Gradient Boosting vs LSTM**).
+(**Gradient Boosting vs LSTM**). Tahap awal pemodelan Gradient Boosting (fitur, baseline, *walk-forward*) ada di
+`src/model/gradient_boosting/` (lihat [Pemodelan Gradient Boosting](#pemodelan-gradient-boosting)).
 
 ```
 XAUUSD_H1.csv ──► events ──────────────► split + kunci uji ─────────► labels
@@ -80,8 +81,37 @@ python3 -m unittest discover -s tests -v
 | `data/` | `events_{dev,calib}.csv`, `bars_devcalib.csv`, `sessions_devcalib.csv`, **`labels_{dev,calib}.csv`** | **Ya, hanya folder ini** |
 | `kunci_uji/` | `events_test.csv`, `bars_test.csv`, `sessions_test.csv`, manifest SHA-256 (hanya-baca) | Tidak sebelum eksekusi tunggal |
 | `output/` | `split_rekonsiliasi.json`, `label_rekonsiliasi.json`, `label_purged.csv`, `laporan_label.md` | Laporan |
+| `model/gradient_boosting/` | `data/` (fitur, OOF baseline dan *walk-forward*), `output/` (rekonsiliasi, laporan) | Hasil pemodelan (ditulis `python -m model.gradient_boosting`) |
 
 Kolom dan aturan lengkap ada di [docs/SPESIFIKASI_DATA.md](docs/SPESIFIKASI_DATA.md).
+
+## Pemodelan Gradient Boosting
+
+Kode di `src/model/gradient_boosting/` menjalankan tiga tahap pertama pemodelan pada `runs/tesis/data/`
+dan menulis hasilnya ke `runs/tesis/model/gradient_boosting/{data,output}/`:
+
+| Tahap | Perintah | Isi |
+|---|---|---|
+| 1 | `fitur` | 15 fitur *point-in-time* (dev + calib), uji pemotongan, laporan fitur |
+| 2 | `pembanding` | Baseline B0 (frekuensi kelas) dan B1 (*wick* ≥ 2/3): akhir + OOF 2019–2023 |
+| 3 | `walk-forward` | 8 konfigurasi LightGBM × 5 lipatan, pilih *log loss* OOF terkecil |
+| – | `bandingkan` | Selisih angka terhadap hasil lama (`references/gradient_boosting_lama/`) |
+
+```bash
+pip install -e '.[model]'
+```
+
+```bash
+PYTHONPATH=src python3 -m model.gradient_boosting semua --config configs/tesis.json
+```
+
+- Parameter dibaca dari salinan Kunci-1 di `configs/kunci_1/`, yang dicek terhadap manifest SHA-256.
+- Data masukan dicek terhadap `references/tesis.json`.
+- Bar tanpa `atr14_h1` atau event tanpa `atr14_d_prev` langsung ditolak (data pipeline < 1.1.0).
+- Tahap fitur dan baseline hanya memakai stdlib; LightGBM hanya dibutuhkan tahap *walk-forward*.
+
+Proses, rumus, dan hasil lama sebagai acuan ada di
+[docs/PEMODELAN_GRADIENT_BOOSTING.md](docs/PEMODELAN_GRADIENT_BOOSTING.md).
 
 ## Aturan data uji
 
@@ -124,12 +154,14 @@ label tidak berubah. Lihat [references/README.md](references/README.md).
 ## Struktur repo
 
 ```
-configs/        parameter label (tesis.json)
-references/     SHA-256 dan angka rekonsiliasi acuan
+configs/        parameter label (tesis.json) dan salinan Kunci-1 (kunci_1/, dengan manifest SHA-256)
+references/     SHA-256 dan angka rekonsiliasi acuan; gradient_boosting_lama/ = hasil lama pemodelan
 src/pdhl_data/  paket pipeline (common, config, events, split, labels, pipeline, CLI)
-tests/          unittest (event, split/guard, label, konfigurasi, reproduksi end-to-end)
+src/model/gradient_boosting/
+                pemodelan GB: kunci, jalur, fitur, laporan_fitur, pembanding, walk_forward, bandingkan, CLI
+tests/          unittest (event, split/guard, label, konfigurasi, reproduksi end-to-end, test_gb_*)
 notebooks/      notebook Google Colab (00_setup_colab.ipynb)
-docs/           spesifikasi data
+docs/           spesifikasi data, proses pemodelan Gradient Boosting
 data/raw/       XAUUSD_H1.csv (data mentah)
 runs/           keluaran run (tidak di-commit)
 ```
