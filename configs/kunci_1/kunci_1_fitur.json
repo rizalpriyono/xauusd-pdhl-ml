@@ -1,0 +1,43 @@
+{
+  "tanggal_kunci": "2026-11-17",
+  "sumber": "Kuesioner Tahap 1 (2.3), aturan Kuesioner_RQ1_PDH_PDL.md 4.3 dan Proposal Final v2 IV.II.5-IV.II.6; syarat: status K = Ya, disebut >= 2 responden lolos, belum ada di Tabel 4.5, maksimal 3",
+  "responden": {"total": 11, "lolos": 9, "gugur_1_1_kurang_3_bulan": 2},
+  "frekuensi_2_3_lolos": {
+    "K2_wick_penolakan": 5,
+    "K5_retest_setelah_breakout": 4,
+    "K1_close_kembali_di_dalam_range": 3,
+    "K3_engulfing": 3,
+    "K4_close_menembus_level": 3,
+    "K6_bos_choch_tf_kecil": 3,
+    "K7_lonjakan_volume": 3,
+    "K9_sesi_london_ny": 3,
+    "K10_berita_fundamental": 2,
+    "lainnya_mss_double_top_bottom": 1,
+    "K8_indikator": 0
+  },
+  "fitur_tambahan": [
+    {"no": 13, "nama": "f13_wick_penolakan", "sumber": "K2", "n": 5,
+     "definisi": "wick searah reversal / (high - low) candle sentuhan; PDH: high - max(open, close), PDL: min(open, close) - low; 0 bila high = low"},
+    {"no": 14, "nama": "f14_engulfing_d", "sumber": "K3", "n": 3,
+     "definisi": "engulfing badan terhadap candle sebelumnya (warna berlawanan, badan menutupi badan); +1 searah continuation, -1 searah reversal, 0 tidak ada"},
+    {"no": 15, "nama": "f15_volume_relatif", "sumber": "K7", "n": 3,
+     "definisi": "tick_volume candle sentuhan / rata-rata tick_volume bar dengan ny_hour sama pada 20 sesi sebelumnya (minimal 10 bar)"}
+  ],
+  "tidak_dipakai": {
+    "K5": "hanya terukur bila k >= 1; k = 0 terkunci",
+    "K1": "sudah ada (fitur 9)",
+    "K4": "sudah ada (fitur 9)",
+    "K9": "sudah ada (fitur 4)",
+    "K6": "butuh data di bawah H1",
+    "K10": "tidak dapat dihitung dari OHLC/tick volume H1",
+    "lainnya_mss": "disebut < 2 responden",
+    "K8": "hanya dicentang responden yang gugur penyaringan"
+  },
+  "B1": {
+    "sumber": "K2 (konfirmasi berstatus Ya yang paling sering dicentang)",
+    "aturan": "f13_wick_penolakan >= theta",
+    "theta": 0.6666666667,
+    "probabilitas": "frekuensi kelas pada data pengembangan, dipisah menurut aturan terpenuhi atau tidak"
+  },
+  "jumlah_fitur_akhir": 15
+}

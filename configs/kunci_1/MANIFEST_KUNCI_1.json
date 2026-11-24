@@ -1,0 +1,11 @@
+{
+  "dibuat_utc": "2026-11-17T16:20:55+00:00",
+  "keterangan": "Kunci-1 lengkap (parameter label, fitur tambahan, B1, rencana RQ2). Perubahan sesudah ini hanya sebagai adendum bertanggal; manifest baru ditulis berdampingan, yang lama tidak ditimpa.",
+  "sha256": {
+    "kunci_1.json": "79312eb3c948c51f97350c539e140d888e2f71498ec03f863241e5687449b810",
+    "kunci_1_fitur.json": "a7fe1cb503a6763aba31eab1f9ef485121e99dbaa309fc6b9dd27b16b6559cac",
+    "kunci_1_rq2.json": "86e4f38c0a2d9c0d2e09fc157d15d4ea29c283006ae6afd1dee0e026970a8b15",
+    "KUNCI-1_parameter_label.md": "73f6c7e1445828ce0f648bffba09018576278aed96faabb0b0ebe1b4e7ecb56a",
+    "RENCANA_ANALISIS_RQ2.md": "82289f6e890b8fc8b84378795dee57e78a260ff4f76b4974bdfd83cba944aed7"
+  }
+}

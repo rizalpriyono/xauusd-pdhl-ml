@@ -1,0 +1,9 @@
+{
+  "a": 2.0,
+  "b": 1.0,
+  "T": 8,
+  "k": 0,
+  "tanggal_kunci": "2026-11-07",
+  "sumber": "Nilai cadangan Tabel 4.2 (Proposal Final v2, IV.I.4): responden lolos penyaringan < 30 hingga tenggat Tahap 1",
+  "catatan": "Hanya parameter label. Fitur tambahan, aturan B1, dan rencana analisis RQ2 belum dikunci. Lihat KUNCI-1_parameter_label.md."
+}
