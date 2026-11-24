@@ -4,6 +4,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 from zoneinfo import ZoneInfo
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
@@ -46,8 +47,8 @@ def week_2016_03():
 
 
 def pipeline(rows, k=0, horizon=8):
-    bars, dq, _ = ev.build_silver_bars(rows)
-    sessions = ev.build_sessions(bars)
+    bars, dq, _, warmup = ev.build_silver_bars(rows)
+    sessions = ev.build_sessions(bars, warmup)
     return bars, dq, sessions, {e["event_id"]: e for e in ev.detect_events(bars, sessions, k, horizon)}
 
 
@@ -128,6 +129,106 @@ class TestSilver(unittest.TestCase):
         self.assertAlmostEqual(bars[13]["atr14_h1"], 1.0)          # rentang 100.5 - 99.5
 
 
+def history_then_2015():
+    """17 sesi Desember 2014 (riwayat sebelum WARMUP_START) + 3 sesi awal Januari 2015.
+
+    Rentang dan harga tiap sesi berbeda agar TR/ATR H1 dan harian tidak konstan, plus satu bar
+    jeda 17.00 NY pra-2015 yang harus dibuang sebagai riwayat, bukan sebagai bar jeda."""
+    hist_dates = [dt.date(2014, 12, 9) + dt.timedelta(days=i) for i in range(23)]
+    hist_dates = [d for d in hist_dates if d.weekday() < 5]
+    silver_dates = [dt.date(2015, 1, 2), dt.date(2015, 1, 5), dt.date(2015, 1, 6)]
+    rows = []
+    for i, d in enumerate(hist_dates + silver_dates):
+        price = 100.0 + 0.3 * i
+        rows += session_rows(d, price + 0.5 + 0.2 * (i % 3), price - 0.4 - 0.1 * (i % 4), price)
+    rows.append(raw_row(dt.datetime(2014, 12, 30, 17, tzinfo=NY), 105.0, 105.0, 105.0, 105.0,
+                        minutes=1))
+    return rows, len(hist_dates)
+
+
+class TestWarmupHistory(unittest.TestCase):
+    """Bar sebelum WARMUP_START tidak masuk silver, tetapi menjadi riwayat TR/ATR dan PDH/PDL."""
+
+    BAR_FIELDS = ("ts_utc", "session_date", "bar_in_session", "hours_since_prev", "tr",
+                  "missing_before", "atr14_h1")
+    SESSION_FIELDS = ("session_date", "prev_session_date", "pdh", "pdl", "prev_n_bars",
+                      "prev_has_data_gap", "tr_d", "atr14_d", "atr14_d_prev", "has_data_gap",
+                      "pdh_status", "pdl_status")
+
+    def setUp(self):
+        self.rows, self.n_hist_sessions = history_then_2015()
+        self.bars, self.dq, self.break_by_year, self.warmup = ev.build_silver_bars(self.rows)
+        self.sessions = ev.build_sessions(self.bars, self.warmup)
+
+    def test_history_excluded_from_silver(self):
+        self.assertEqual(len(self.warmup), 23 * self.n_hist_sessions)
+        self.assertEqual(self.dq["sebelum_warmup"], 23 * self.n_hist_sessions + 1)
+        self.assertEqual(self.dq["bar_jeda_17_ny"], 0)          # bar jeda pra-2015 = riwayat
+        self.assertEqual(dict(self.break_by_year), {})
+        self.assertEqual([b["bar_idx"] for b in self.bars], list(range(3 * 23)))
+        self.assertEqual(self.bars[0]["session_date"], dt.date(2015, 1, 2))
+        self.assertEqual([s["session_date"] for s in self.sessions],
+                         [dt.date(2015, 1, 2), dt.date(2015, 1, 5), dt.date(2015, 1, 6)])
+        self.assertEqual(self.sessions[0]["first_bar_idx"], 0)
+
+    def test_no_missing_indicators_from_first_silver_bar(self):
+        self.assertTrue(all(b["atr14_h1"] is not None for b in self.bars))
+        self.assertEqual(self.bars[0]["hours_since_prev"], 26.0)  # 31 Des 16.00 -> 1 Jan 18.00
+        first = self.sessions[0]
+        last_hist = [b for b in self.warmup if b["session_date"] == dt.date(2014, 12, 31)]
+        self.assertEqual(first["prev_session_date"], dt.date(2014, 12, 31))
+        self.assertEqual(first["pdh"], max(b["high"] for b in last_hist))
+        self.assertEqual(first["pdl"], min(b["low"] for b in last_hist))
+        self.assertEqual(first["prev_n_bars"], 23)
+        self.assertNotEqual(first["pdh_status"], "no_prev_session")
+        self.assertTrue(all(s["atr14_d"] is not None and s["atr14_d_prev"] is not None
+                            for s in self.sessions))
+
+    def test_equals_untrimmed_computation(self):
+        """Silver yang dipotong = sufiks perhitungan atas seluruh riwayat (tanpa pemotongan)."""
+        with mock.patch.object(ev, "WARMUP_START", dt.date(1900, 1, 1)):
+            full_bars, _, _, no_warmup = ev.build_silver_bars(self.rows)
+            full_sessions = ev.build_sessions(full_bars, no_warmup)
+        self.assertEqual(no_warmup, [])
+        off = len(self.warmup)
+        for b, f in zip(self.bars, full_bars[off:], strict=True):
+            self.assertEqual({c: b[c] for c in self.BAR_FIELDS}, {c: f[c] for c in self.BAR_FIELDS})
+            self.assertEqual(b["bar_idx"] + off, f["bar_idx"])
+        tail = full_sessions[-len(self.sessions):]
+        for s, f in zip(self.sessions, tail, strict=True):
+            self.assertEqual({c: s[c] for c in self.SESSION_FIELDS},
+                             {c: f[c] for c in self.SESSION_FIELDS})
+            for c in ("first_bar_idx", "last_bar_idx", "pdh_touch_idx", "pdl_touch_idx"):
+                self.assertEqual(None if s[c] is None else s[c] + off, f[c])
+
+    def test_history_never_leaks_into_silver(self):
+        self.assertTrue(all(b["session_date"] >= ev.WARMUP_START for b in self.bars))
+        self.assertTrue(all(s["session_date"] >= ev.WARMUP_START for s in self.sessions))
+        self.assertTrue(all(b["session_date"] < ev.WARMUP_START for b in self.warmup))
+        self.assertTrue(all("bar_idx" not in b for b in self.warmup))
+
+    def test_overlapping_warmup_rejected(self):
+        with self.assertRaisesRegex(ValueError, "warmup_bars"):
+            ev.build_sessions(self.bars, self.warmup + self.bars[:1])
+
+    def test_short_history_still_matches_untrimmed(self):
+        """Riwayat < 14 bar: ATR H1 baru terisi di bar ke-14 hitungan riwayat + silver."""
+        rows = [*session_rows(dt.date(2014, 12, 31), 100.5, 99.5, 100.0)][-5:]   # 5 bar riwayat
+        rows += session_rows(dt.date(2015, 1, 2), 100.6, 99.4, 100.0)
+        bars, _, _, warmup = ev.build_silver_bars(rows)
+        self.assertEqual(len(warmup), 5)
+        self.assertIsNone(bars[7]["atr14_h1"])                  # bar ke-13 gabungan
+        self.assertIsNotNone(bars[8]["atr14_h1"])               # bar ke-14 gabungan
+        self.assertEqual(ev.build_sessions(bars, warmup)[0]["prev_n_bars"], 5)
+
+    def test_break_bar_after_warmup_start_still_counted(self):
+        rows = self.rows + [raw_row(dt.datetime(2015, 1, 2, 17, tzinfo=NY), 105.0, 105.0, 105.0,
+                                    105.0, minutes=1)]
+        _, dq, break_by_year, _ = ev.build_silver_bars(rows)
+        self.assertEqual(dq["bar_jeda_17_ny"], 1)
+        self.assertEqual(dict(break_by_year), {2015: 1})
+
+
 class TestEvents(unittest.TestCase):
     def test_levels_status_and_first_touch(self):
         _, _, sessions, events = pipeline(week_2016_03())
@@ -200,16 +301,16 @@ class TestDst(unittest.TestCase):
 
     def test_dst_change_passes_with_clean_break(self):
         rows = self._two_weeks()
-        bars, _, _ = ev.build_silver_bars(rows)
-        out = ev.dst_verification(rows, ev.build_sessions(bars))
+        bars, _, _, warmup = ev.build_silver_bars(rows)
+        out = ev.dst_verification(rows, ev.build_sessions(bars, warmup))
         self.assertEqual([(r["role"], r["utc_offset"], r["status"]) for r in out],
                          [("sebelum", -5, "PASS"), ("sesudah", -4, "PASS")])
 
     def test_full_bar_at_17_ny_fails(self):
         bad = raw_row(dt.datetime(2016, 3, 14, 17, tzinfo=NY), 100.0, 100.1, 99.9, 100.0, minutes=60)
         rows = self._two_weeks([bad])
-        bars, _, _ = ev.build_silver_bars(rows)
-        out = ev.dst_verification(rows, ev.build_sessions(bars))
+        bars, _, _, warmup = ev.build_silver_bars(rows)
+        out = ev.dst_verification(rows, ev.build_sessions(bars, warmup))
         self.assertEqual(out[1]["status"], "GAGAL")
         self.assertEqual(out[1]["raw_bars_17_full"], 1)
 

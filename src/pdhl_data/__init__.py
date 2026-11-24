@@ -11,4 +11,4 @@ Modul:
 from .common import TestDataLeak, load_model_csv
 
 __all__ = ["TestDataLeak", "load_model_csv"]
-__version__ = "1.0.0"
+__version__ = "1.1.0"

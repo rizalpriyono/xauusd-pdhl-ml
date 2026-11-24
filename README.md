@@ -109,7 +109,10 @@ Kolom dan aturan lengkap ada di [docs/SPESIFIKASI_DATA.md](docs/SPESIFIKASI_DATA
 
 `references/tesis.json` dibuat dari keluaran pipeline lama yang sudah direkonsiliasi dengan implementasi
 independen, bukan dari kode ini. Kode di repo ini menghasilkan 16 berkas dan 55 angka rekonsiliasi yang
-identik byte demi byte. Lihat [references/README.md](references/README.md).
+identik byte demi byte dengan pipeline lama, **kecuali** 6 berkas dan 2 angka yang tercatat di `adendum`.
+Pengecualian ini berasal dari adendum 2026-11-24: pemanasan ATR/PDH-PDL kini memakai riwayat sebelum
+2015, sehingga `atr14_h1`, `atr14_d`, dan PDH/PDL tidak lagi kosong di awal 2015. Data uji, event, dan
+label tidak berubah. Lihat [references/README.md](references/README.md).
 
 | Modul | Asal (folder lama di luar repo) |
 |---|---|

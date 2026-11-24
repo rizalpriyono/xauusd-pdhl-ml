@@ -1,9 +1,14 @@
 """Tahap 1: deteksi event PDH/PDL XAUUSD H1 (bronze -> silver -> gold).
 
-Proposal Final v2, IV.II.1 (Data) dan IV.II.2 (Definisi Event). Logika dipindahkan tanpa
-perubahan dari `Data Engineering PDH-PDL/pdhl_events_local.py`; keluarannya identik byte demi byte
-(lihat `references/tesis.json`). Logika ini sudah direkonsiliasi dengan implementasi independen
-(notebook Databricks di folder lama dan pembangunan ulang dari spesifikasi) sebelum repo dibuat.
+Proposal Final v2, IV.II.1 (Data) dan IV.II.2 (Definisi Event). Logika dipindahkan dari
+`Data Engineering PDH-PDL/pdhl_events_local.py`, yang sudah direkonsiliasi dengan implementasi
+independen (notebook Databricks di folder lama dan pembangunan ulang dari spesifikasi) sebelum repo
+dibuat.
+
+Adendum 2026-11-24: bar sebelum WARMUP_START tidak lagi dibuang sebelum indikator dihitung, tetapi
+menjadi riwayat TR/ATR(14) H1, ATR(14) harian, dan PDH/PDL sesi pertama. Dengan begitu tidak ada
+nilai kosong sejak bar silver pertama. Keluarannya identik byte demi byte dengan pipeline lama,
+kecuali berkas yang tercatat di `references/tesis.json` -> `adendum`.
 
 Deteksi event tidak memerlukan label. Parameter k dan T hanya menentukan bar keputusan dan
 pengecualian jendela label (akhir pekan, data hilang).
@@ -72,11 +77,18 @@ def read_bronze(path):
 
 # ---------------------------------------------------------------- silver: bar
 def build_silver_bars(bronze, has_daily_break=True):
-    """has_daily_break=False untuk pasar tanpa jeda 17.00-18.00 NY (forex): candle 17.00 tidak
+    """Bersihkan bronze menjadi bar silver (sesi >= WARMUP_START).
+
+    Mengembalikan (bars, dq, break_by_year, warmup). `warmup` adalah bar bersih sebelum
+    WARMUP_START. Bar ini tidak masuk silver, tetapi menjadi riwayat agar TR, `hours_since_prev`, dan
+    ATR(14) H1 sudah terisi sejak bar silver pertama. Teruskan `warmup` ke `build_sessions` untuk PDH/PDL
+    dan ATR harian. `bar_idx` hanya diberikan pada bar silver (mulai 0).
+
+    has_daily_break=False untuk pasar tanpa jeda 17.00-18.00 NY (forex): candle 17.00 tidak
     dibuang dan sesi normal dibuka 17.00 NY."""
     open_hour = SESSION_OPEN_HOUR_NY if has_daily_break else BREAK_HOUR_NY
     dq = Counter()
-    seen, bars = set(), []
+    seen, clean = set(), []
     break_by_year = Counter()
     for r in sorted(bronze, key=lambda x: x["ts_utc"]):
         if r["ts_utc"] in seen:
@@ -89,21 +101,22 @@ def build_silver_bars(bronze, has_daily_break=True):
             continue
         ts_ny = r["ts_utc"].astimezone(NY)
         session_date = (ts_ny + SESSION_SHIFT).date()
-        if session_date < WARMUP_START:
-            dq["sebelum_warmup"] += 1
-            continue
+        history = session_date < WARMUP_START
+        if history:
+            dq["sebelum_warmup"] += 1           # tidak masuk silver; hanya riwayat indikator
         if has_daily_break and ts_ny.hour == BREAK_HOUR_NY:
-            dq["bar_jeda_17_ny"] += 1
-            break_by_year[ts_ny.year] += 1
+            if not history:
+                dq["bar_jeda_17_ny"] += 1
+                break_by_year[ts_ny.year] += 1
             continue
-        bars.append({**r, "ts_ny": ts_ny, "ny_hour": ts_ny.hour,
-                     "utc_offset_h": int(ts_ny.utcoffset().total_seconds() // 3600),
-                     "session_date": session_date,
-                     "week_start": session_date - dt.timedelta(days=session_date.weekday())})
+        clean.append({**r, "ts_ny": ts_ny, "ny_hour": ts_ny.hour,
+                      "utc_offset_h": int(ts_ny.utcoffset().total_seconds() // 3600),
+                      "session_date": session_date,
+                      "week_start": session_date - dt.timedelta(days=session_date.weekday())})
 
+    # Indikator dihitung atas riwayat + silver dalam satu urutan, baru kemudian riwayat dipotong.
     prev, in_session = None, Counter()
-    for i, b in enumerate(bars):
-        b["bar_idx"] = i
+    for b in clean:
         in_session[b["session_date"]] += 1
         b["bar_in_session"] = in_session[b["session_date"]]
         b["hours_since_prev"] = None if prev is None else (b["ts_utc"] - prev["ts_utc"]).total_seconds() / 3600
@@ -112,31 +125,44 @@ def build_silver_bars(bronze, has_daily_break=True):
         b["missing_before"] = (b["hours_since_prev"] > 1 if b["bar_in_session"] > 1
                                else b["ny_hour"] != open_hour)
         prev = b
-    for b, atr in zip(bars, wilder([b["tr"] for b in bars])):
+    for b, atr in zip(clean, wilder([b["tr"] for b in clean])):
         b["atr14_h1"] = atr
-    return bars, dq, break_by_year
+
+    n_warmup = sum(b["session_date"] < WARMUP_START for b in clean)   # bar terurut: riwayat = prefiks
+    warmup, bars = clean[:n_warmup], clean[n_warmup:]
+    for i, b in enumerate(bars):
+        b["bar_idx"] = i
+    return bars, dq, break_by_year, warmup
 
 
 # ---------------------------------------------------------------- silver: sesi
-def build_sessions(bars):
+def _aggregate_sessions(bars):
     by_session = defaultdict(list)
     for b in bars:
         by_session[b["session_date"]].append(b)
+    return [{
+        "session_date": sd, "week_start": bs[0]["week_start"],
+        "s_open": bs[0]["open"], "s_high": max(b["high"] for b in bs),
+        "s_low": min(b["low"] for b in bs), "s_close": bs[-1]["close"],
+        "n_bars": len(bs), "first_bar_idx": bs[0].get("bar_idx"), "last_bar_idx": bs[-1].get("bar_idx"),
+        "first_ts_ny": bs[0]["ts_ny"], "last_ts_ny": bs[-1]["ts_ny"],
+        "has_data_gap": any(b["missing_before"] for b in bs),
+    } for sd, bs in sorted(by_session.items())]
 
-    sessions = []
-    for sd in sorted(by_session):
-        bs = by_session[sd]
-        sessions.append({
-            "session_date": sd, "week_start": bs[0]["week_start"],
-            "s_open": bs[0]["open"], "s_high": max(b["high"] for b in bs),
-            "s_low": min(b["low"] for b in bs), "s_close": bs[-1]["close"],
-            "n_bars": len(bs), "first_bar_idx": bs[0]["bar_idx"], "last_bar_idx": bs[-1]["bar_idx"],
-            "first_ts_ny": bs[0]["ts_ny"], "last_ts_ny": bs[-1]["ts_ny"],
-            "has_data_gap": any(b["missing_before"] for b in bs),
-        })
+
+def build_sessions(bars, warmup_bars=()):
+    """Sesi silver dari `bars`. `warmup_bars` (keluaran ke-4 `build_silver_bars`) hanya menjadi
+    riwayat: PDH/PDL sesi silver pertama dan ATR(14) harian dihitung dengan sesi-sesi tersebut,
+    tetapi sesi riwayat tidak dikembalikan."""
+    history = _aggregate_sessions(warmup_bars)
+    sessions = _aggregate_sessions(bars)
+    if history and sessions and history[-1]["session_date"] >= sessions[0]["session_date"]:
+        raise ValueError("warmup_bars harus seluruhnya sebelum sesi silver pertama "
+                         f"({history[-1]['session_date']} >= {sessions[0]['session_date']})")
+    chain = history + sessions
 
     prev = None
-    for s in sessions:
+    for s in chain:
         s["prev_session_date"] = prev and prev["session_date"]
         s["pdh"] = prev and prev["s_high"]
         s["pdl"] = prev and prev["s_low"]
@@ -144,10 +170,12 @@ def build_sessions(bars):
         s["prev_has_data_gap"] = prev is not None and prev["has_data_gap"]
         s["tr_d"] = true_range(s["s_high"], s["s_low"], prev and prev["s_close"])
         prev = s
-    atr_d = wilder([s["tr_d"] for s in sessions])
-    for i, s in enumerate(sessions):
+    atr_d = wilder([s["tr_d"] for s in chain])
+    for i, s in enumerate(chain):
         s["atr14_d"] = atr_d[i]
         s["atr14_d_prev"] = atr_d[i - 1] if i > 0 else None   # hanya sesi yang sudah selesai
+
+    for s in sessions:
         s["is_partial"] = s["n_bars"] < PARTIAL_SESSION_MIN_BARS
         s["split"] = split_of_date(s["session_date"])
 
@@ -369,8 +397,8 @@ def run_events(raw_path, out_dir, k, horizon, write_report=True):
     """Jalankan bronze -> silver -> gold dan tulis keluarannya ke `out_dir`."""
     out_dir.mkdir(parents=True, exist_ok=True)
     bronze = read_bronze(raw_path)
-    bars, dq, break_by_year = build_silver_bars(bronze)
-    sessions = build_sessions(bars)
+    bars, dq, break_by_year, warmup = build_silver_bars(bronze)
+    sessions = build_sessions(bars, warmup)
     events = detect_events(bars, sessions, k, horizon)
     dst_rows = dst_verification(bronze, sessions)
 
