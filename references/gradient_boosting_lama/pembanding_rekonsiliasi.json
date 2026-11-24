@@ -1,0 +1,325 @@
+{
+  "rm": "RM-23",
+  "kelas": [
+    "Reversal",
+    "Continuation",
+    "Netral"
+  ],
+  "theta_b1": 0.6666666667,
+  "laplace": 1,
+  "clip": 1e-15,
+  "sumber_sha256": {
+    "features_dev.csv": "560f28560373b42661a2df178e3415653c4cf777bf3fbf310029e052564dc42b",
+    "labels_dev.csv": "f24afc900ce624e81c053d077fb52911d3c1871337422bb938248fdbd8394a59"
+  },
+  "catatan": "B2 (regresi logistik) tidak dihitung: dihapus atas keputusan 22 Nov 2026, menunggu Adendum 3 Kunci-1.",
+  "akhir": {
+    "n_latih": 1841,
+    "n_purged": 0,
+    "B0": {
+      "n": 1841,
+      "jumlah": {
+        "Reversal": 414,
+        "Continuation": 1042,
+        "Netral": 385
+      },
+      "peluang": {
+        "Reversal": 0.22487778381314502,
+        "Continuation": 0.5659967409016838,
+        "Netral": 0.20912547528517111
+      }
+    },
+    "B1": {
+      "terpenuhi": {
+        "n": 173,
+        "jumlah": {
+          "Reversal": 42,
+          "Continuation": 83,
+          "Netral": 48
+        },
+        "laplace": false,
+        "peluang": {
+          "Reversal": 0.24277456647398843,
+          "Continuation": 0.4797687861271676,
+          "Netral": 0.2774566473988439
+        }
+      },
+      "tidak_terpenuhi": {
+        "n": 1668,
+        "jumlah": {
+          "Reversal": 372,
+          "Continuation": 959,
+          "Netral": 337
+        },
+        "laplace": false,
+        "peluang": {
+          "Reversal": 0.22302158273381295,
+          "Continuation": 0.5749400479616307,
+          "Netral": 0.20203836930455635
+        }
+      }
+    }
+  },
+  "walk_forward": [
+    {
+      "tahun_validasi": 2019,
+      "n_latih": 689,
+      "n_purged": 0,
+      "n_validasi": 227,
+      "B0": {
+        "n": 689,
+        "jumlah": {
+          "Reversal": 156,
+          "Continuation": 369,
+          "Netral": 164
+        },
+        "peluang": {
+          "Reversal": 0.22641509433962265,
+          "Continuation": 0.5355587808417998,
+          "Netral": 0.23802612481857766
+        }
+      },
+      "B1": {
+        "terpenuhi": {
+          "n": 63,
+          "jumlah": {
+            "Reversal": 15,
+            "Continuation": 30,
+            "Netral": 18
+          },
+          "laplace": false,
+          "peluang": {
+            "Reversal": 0.23809523809523808,
+            "Continuation": 0.47619047619047616,
+            "Netral": 0.2857142857142857
+          }
+        },
+        "tidak_terpenuhi": {
+          "n": 626,
+          "jumlah": {
+            "Reversal": 141,
+            "Continuation": 339,
+            "Netral": 146
+          },
+          "laplace": false,
+          "peluang": {
+            "Reversal": 0.22523961661341854,
+            "Continuation": 0.5415335463258786,
+            "Netral": 0.23322683706070288
+          }
+        }
+      },
+      "log_loss_b0": 0.9563133900853753,
+      "log_loss_b1": 0.9563132979630519
+    },
+    {
+      "tahun_validasi": 2020,
+      "n_latih": 916,
+      "n_purged": 0,
+      "n_validasi": 227,
+      "B0": {
+        "n": 916,
+        "jumlah": {
+          "Reversal": 203,
+          "Continuation": 506,
+          "Netral": 207
+        },
+        "peluang": {
+          "Reversal": 0.22161572052401746,
+          "Continuation": 0.5524017467248908,
+          "Netral": 0.2259825327510917
+        }
+      },
+      "B1": {
+        "terpenuhi": {
+          "n": 81,
+          "jumlah": {
+            "Reversal": 20,
+            "Continuation": 40,
+            "Netral": 21
+          },
+          "laplace": false,
+          "peluang": {
+            "Reversal": 0.24691358024691357,
+            "Continuation": 0.49382716049382713,
+            "Netral": 0.25925925925925924
+          }
+        },
+        "tidak_terpenuhi": {
+          "n": 835,
+          "jumlah": {
+            "Reversal": 183,
+            "Continuation": 466,
+            "Netral": 186
+          },
+          "laplace": false,
+          "peluang": {
+            "Reversal": 0.21916167664670658,
+            "Continuation": 0.5580838323353293,
+            "Netral": 0.22275449101796407
+          }
+        }
+      },
+      "log_loss_b0": 1.0035145304963657,
+      "log_loss_b1": 1.0007262317456826
+    },
+    {
+      "tahun_validasi": 2021,
+      "n_latih": 1143,
+      "n_purged": 0,
+      "n_validasi": 236,
+      "B0": {
+        "n": 1143,
+        "jumlah": {
+          "Reversal": 255,
+          "Continuation": 630,
+          "Netral": 258
+        },
+        "peluang": {
+          "Reversal": 0.2230971128608924,
+          "Continuation": 0.5511811023622047,
+          "Netral": 0.22572178477690288
+        }
+      },
+      "B1": {
+        "terpenuhi": {
+          "n": 103,
+          "jumlah": {
+            "Reversal": 26,
+            "Continuation": 49,
+            "Netral": 28
+          },
+          "laplace": false,
+          "peluang": {
+            "Reversal": 0.2524271844660194,
+            "Continuation": 0.47572815533980584,
+            "Netral": 0.27184466019417475
+          }
+        },
+        "tidak_terpenuhi": {
+          "n": 1040,
+          "jumlah": {
+            "Reversal": 229,
+            "Continuation": 581,
+            "Netral": 230
+          },
+          "laplace": false,
+          "peluang": {
+            "Reversal": 0.2201923076923077,
+            "Continuation": 0.5586538461538462,
+            "Netral": 0.22115384615384615
+          }
+        }
+      },
+      "log_loss_b0": 0.9764084943871667,
+      "log_loss_b1": 0.9711607496639627
+    },
+    {
+      "tahun_validasi": 2022,
+      "n_latih": 1379,
+      "n_purged": 0,
+      "n_validasi": 236,
+      "B0": {
+        "n": 1379,
+        "jumlah": {
+          "Reversal": 304,
+          "Continuation": 766,
+          "Netral": 309
+        },
+        "peluang": {
+          "Reversal": 0.22044960116026105,
+          "Continuation": 0.5554749818709209,
+          "Netral": 0.224075416968818
+        }
+      },
+      "B1": {
+        "terpenuhi": {
+          "n": 132,
+          "jumlah": {
+            "Reversal": 33,
+            "Continuation": 61,
+            "Netral": 38
+          },
+          "laplace": false,
+          "peluang": {
+            "Reversal": 0.25,
+            "Continuation": 0.4621212121212121,
+            "Netral": 0.2878787878787879
+          }
+        },
+        "tidak_terpenuhi": {
+          "n": 1247,
+          "jumlah": {
+            "Reversal": 271,
+            "Continuation": 705,
+            "Netral": 271
+          },
+          "laplace": false,
+          "peluang": {
+            "Reversal": 0.21732157177225342,
+            "Continuation": 0.5653568564554932,
+            "Netral": 0.21732157177225342
+          }
+        }
+      },
+      "log_loss_b0": 0.9451538002778564,
+      "log_loss_b1": 0.939127994875624
+    },
+    {
+      "tahun_validasi": 2023,
+      "n_latih": 1615,
+      "n_purged": 0,
+      "n_validasi": 226,
+      "B0": {
+        "n": 1615,
+        "jumlah": {
+          "Reversal": 352,
+          "Continuation": 910,
+          "Netral": 353
+        },
+        "peluang": {
+          "Reversal": 0.21795665634674924,
+          "Continuation": 0.5634674922600619,
+          "Netral": 0.21857585139318886
+        }
+      },
+      "B1": {
+        "terpenuhi": {
+          "n": 151,
+          "jumlah": {
+            "Reversal": 37,
+            "Continuation": 69,
+            "Netral": 45
+          },
+          "laplace": false,
+          "peluang": {
+            "Reversal": 0.24503311258278146,
+            "Continuation": 0.45695364238410596,
+            "Netral": 0.2980132450331126
+          }
+        },
+        "tidak_terpenuhi": {
+          "n": 1464,
+          "jumlah": {
+            "Reversal": 315,
+            "Continuation": 841,
+            "Netral": 308
+          },
+          "laplace": false,
+          "peluang": {
+            "Reversal": 0.2151639344262295,
+            "Continuation": 0.5744535519125683,
+            "Netral": 0.2103825136612022
+          }
+        }
+      },
+      "log_loss_b0": 0.9682990947523963,
+      "log_loss_b1": 0.9726459645985323
+    }
+  ],
+  "oof": {
+    "n": 1152,
+    "log_loss_b0": 0.9697962108741647,
+    "log_loss_b1": 0.9677900216618794
+  }
+}

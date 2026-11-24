@@ -5,13 +5,19 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "pdhl-data"
 version = "1.1.0"
-description = "Pipeline data PDH/PDL XAUUSD H1: data mentah -> event -> split + kunci uji -> label triple barrier"
+description = "Pipeline data PDH/PDL XAUUSD H1 (mentah -> event -> split + kunci uji -> label) dan pemodelan Gradient Boosting"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = []          # hanya stdlib; di Windows tambahkan paket `tzdata` untuk zoneinfo
 
+[project.optional-dependencies]
+# Tahap walk-forward Gradient Boosting. Versi sama dengan lingkungan hasil lama (22 Nov 2026) agar
+# angka bisa dibandingkan; tahap fitur dan baseline tetap hanya stdlib.
+model = ["lightgbm==4.7.0", "numpy==2.2.6", "scipy==1.15.3"]
+
 [project.scripts]
 pdhl-data = "pdhl_data.__main__:main"
+pdhl-gb = "model.gradient_boosting.__main__:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

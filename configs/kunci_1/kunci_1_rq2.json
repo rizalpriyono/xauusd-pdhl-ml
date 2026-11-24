@@ -1,0 +1,49 @@
+{
+  "tanggal_kunci": "2026-11-17",
+  "dokumen": "RENCANA_ANALISIS_RQ2.md",
+  "kelas": ["Reversal", "Continuation", "Netral"],
+  "rq2_1": {
+    "metrik_utama": "log_loss",
+    "log_basis": "e",
+    "clip_probabilitas": 1e-15,
+    "baseline": ["B0", "B1", "B2"],
+    "B1_laplace_bila_sel_kosong": 1,
+    "B2": {"fitur": ["f01_jenis_level", "f06_rezim_volatilitas", "f09_posisi_close"], "penalti": "l2", "C": 1.0},
+    "bootstrap": {"klaster": "week_start", "n": 2000, "seed": 20261117, "interval": "persentil", "tingkat": 0.95},
+    "kriteria": "batas_atas_IK95 < 0 untuk ketiga baseline",
+    "ece_bin": 10
+  },
+  "rq2_2": {
+    "K": 1000,
+    "seed_dasar": 20261118,
+    "u_rentang": [0.25, 1.0],
+    "jarak_min_atr_d": 0.25,
+    "maks_undi_ulang": 1000,
+    "periode": ["2016-01-01", "2026-07-31"],
+    "alpha": 0.05,
+    "ss_jumlah_set": 20,
+    "ss_set": "j = 1..20"
+  },
+  "pendukung": {
+    "delta_utama": 0.1,
+    "delta_grid": [0.0, 0.1, 0.2, 0.3],
+    "spread_usd": [0.0, 0.15, 0.25, 0.35, 0.5, 1.0],
+    "sensitivitas_label": {"a": [1.5, 2.0, 3.0], "b": [1.0], "T": [4, 8, 12]}
+  },
+  "teknis": {
+    "seed_model": 20261119,
+    "lightgbm": {"objective": "multiclass", "learning_rate": 0.05, "max_depth": [2, 3], "n_estimators": [100, 300], "min_child_samples": [20, 50], "deterministic": true, "num_threads": 1},
+    "logreg": {"multi_class": "multinomial", "solver": "lbfgs", "max_iter": 5000, "C": [0.1, 1.0, 10.0]},
+    "toleransi_seri_logloss": 1e-6,
+    "temperature_rentang": [0.05, 20.0]
+  },
+  "pembanding_responden": {
+    "pengisi": 11, "lolos": 9,
+    "b_median": 1.0, "b_iqr": [0.9375, 1.625], "b_n": 8,
+    "a_median": 3.0, "a_iqr": [2.75, 3.0], "a_n": 8,
+    "rasio_a_b_median": 2.0,
+    "T_median": "±2 jam", "T_q1": "±2 jam", "T_q3": "Lebih dari 1 hari / tanpa batas",
+    "k_modus": 0, "k_distribusi": {"0": 7, "1": 1, "2": 1},
+    "proporsi_tf_kecil": 0.5556, "proporsi_saat_menyentuh": 0.0
+  }
+}
