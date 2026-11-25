@@ -59,6 +59,13 @@ class Kunci:
     hidden_sizes: tuple        # kandidat jumlah unit tersembunyi LSTM
     lstm_teknis: dict          # hiperparameter pelatihan tetap LSTM
     manifest_sha256: dict      # nama berkas Kunci-1 -> SHA-256 (sudah dicek)
+    a: float = 2.0             # target posisi reversal (kelipatan ATR, Kunci-1)
+    b: float = 1.0             # stop posisi reversal (kelipatan ATR, Kunci-1)
+    T: int = 8                 # horizon triple barrier (candle H1, Kunci-1)
+    temperature_rentang: tuple = (0.05, 20.0)   # rentang golden-section τ (RM-26)
+    ece_bin: int = 10          # jumlah bin ECE & diagram reliabilitas (Kunci-1)
+    delta_utama: float = 0.1   # ambang nilai harapan utama RM-27 (satuan R)
+    delta_grid: tuple = (0.0, 0.1, 0.2, 0.3)    # grid kurva cakupan-kinerja RM-27
 
 
 def _baca_json(path):
@@ -121,8 +128,11 @@ def load_rq2(path):
     teknis = raw.get("teknis", {})
     boot = rq21.get("bootstrap", {})
     clip, laplace = rq21.get("clip_probabilitas"), rq21.get("B1_laplace_bila_sel_kosong")
+    ece_bin = rq21.get("ece_bin")
     tol = teknis.get("toleransi_seri_logloss")
     seed_model = teknis.get("seed_model")
+    temp_range = teknis.get("temperature_rentang")
+    delta_grid = sup.get("delta_grid")
     checks = {
         "kelas harus [Reversal, Continuation, Netral]": tuple(raw.get("kelas", ())) == CLASSES,
         "bootstrap harus 2.000 ulangan klaster week_start":
@@ -130,11 +140,17 @@ def load_rq2(path):
         "K plasebo harus 1.000": rq22.get("K") == 1000,
         "SS plasebo harus 20 set": rq22.get("ss_jumlah_set") == 20,
         "delta_utama harus 0,1 dan ada di delta_grid":
-            sup.get("delta_utama") == 0.1 and 0.1 in sup.get("delta_grid", []),
+            sup.get("delta_utama") == 0.1 and isinstance(delta_grid, list)
+            and all(_angka(d) and d >= 0 for d in delta_grid) and 0.1 in delta_grid,
         "clip_probabilitas harus di antara 0 dan 1": _angka(clip) and 0 < clip < 1,
         "B1_laplace_bila_sel_kosong harus bilangan bulat >= 0":
             isinstance(laplace, int) and not isinstance(laplace, bool) and laplace >= 0,
+        "ece_bin harus bilangan bulat >= 2":
+            isinstance(ece_bin, int) and not isinstance(ece_bin, bool) and ece_bin >= 2,
         "toleransi_seri_logloss harus >= 0": _angka(tol) and tol >= 0,
+        "temperature_rentang harus [lo, hi] dengan 0 < lo < hi":
+            isinstance(temp_range, list) and len(temp_range) == 2
+            and all(_angka(v) for v in temp_range) and 0 < temp_range[0] < temp_range[1],
         f"seed_model harus {SEED_MODEL}":
             isinstance(seed_model, int) and not isinstance(seed_model, bool) and seed_model == SEED_MODEL,
     }
@@ -161,7 +177,9 @@ def muat_kunci(cfg, kunci_dir):
     fitur = load_fitur(kunci_dir / FITUR_JSON)
     rq2 = load_rq2(kunci_dir / RQ2_JSON)
     rq21 = rq2["rq2_1"]
+    sup = rq2["pendukung"]
     seed_dasar = int(rq2["teknis"]["seed_model"])
+    t_lo, t_hi = rq2["teknis"]["temperature_rentang"]
     return Kunci(
         theta=float(fitur["B1"]["theta"]),
         laplace=int(rq21["B1_laplace_bila_sel_kosong"]),
@@ -174,4 +192,11 @@ def muat_kunci(cfg, kunci_dir):
         hidden_sizes=HIDDEN_TERKUNCI,
         lstm_teknis=dict(LSTM_TEKNIS_TERKUNCI),
         manifest_sha256=sha,
+        a=float(label["a"]),
+        b=float(label["b"]),
+        T=int(label["T"]),
+        temperature_rentang=(float(t_lo), float(t_hi)),
+        ece_bin=int(rq21["ece_bin"]),
+        delta_utama=float(sup["delta_utama"]),
+        delta_grid=tuple(float(d) for d in sup["delta_grid"]),
     )

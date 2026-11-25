@@ -42,6 +42,14 @@ class ModelPaths:
     def output(self):
         return self.root / "output"
 
+    @property
+    def checkpoints(self):
+        return self.root / "checkpoints"
+
+    @property
+    def kunci_2(self):
+        return self.root / "kunci_2"
+
 
 def model_paths(cfg, runs_dir):
     return ModelPaths(Path(runs_dir).resolve() / cfg["name"])

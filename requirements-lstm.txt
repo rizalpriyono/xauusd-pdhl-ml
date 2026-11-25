@@ -1,0 +1,6 @@
+# Dependensi khusus jalur LSTM PyTorch (walk-forward, model-akhir, kalibrasi).
+# Setara dengan `pip install -e '.[lstm]'` (tanpa mengunduh LightGBM).
+# Tahap fitur, pembanding, keputusan, kunci-2, dan verifikasi-kunci-2 berjalan murni stdlib.
+# Versi tepat lingkungan Kunci-2 LSTM (25 Nov 2026, Python 3.13.7): torch==2.15.0, numpy==2.5.5
+torch>=2.2
+numpy>=1.26

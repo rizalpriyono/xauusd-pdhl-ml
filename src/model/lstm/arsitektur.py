@@ -5,9 +5,11 @@ PyTorch nyata, sehingga tahap `fitur`, `pembanding`, serta unit test stdlib teta
 PyTorch maupun NumPy.
 """
 import copy
+import json
 import random
+from pathlib import Path
 
-from .fitur import CYCLIC_INDICES
+from .fitur import CYCLIC_INDICES, FEATURE_NAMES
 
 
 def _impor_torch():
@@ -98,6 +100,30 @@ class SequenceScaler3D:
 
     def fit_transform(self, X_train):
         return self.fit(X_train).transform(X_train)
+
+    def to_dict(self, feature_names=None):
+        """Serialisasi statistik scaler ke kamus JSON-safe."""
+        if self.mean_ is None or self.std_ is None:
+            raise RuntimeError("SequenceScaler3D belum di-fit sebelum to_dict")
+        names = list(feature_names) if feature_names is not None else list(FEATURE_NAMES)
+        return {
+            "feature_names": names,
+            "skip_indices": [int(i) for i in self.skip_indices],
+            "clip_val": self.clip_val,
+            "mean": [float(v) for v in self.mean_],
+            "std": [float(v) for v in self.std_],
+        }
+
+    @classmethod
+    def from_dict(cls, data):
+        """Bangun ulang SequenceScaler3D dari kamus JSON."""
+        np, _, _, _, _ = _impor_torch()
+        sc = cls(clip_val=data["clip_val"], skip_indices=tuple(data["skip_indices"]))
+        sc.mean_ = np.asarray(data["mean"], dtype=np.float64)
+        sc.std_ = np.asarray(data["std"], dtype=np.float64)
+        if sc.mean_.shape != sc.std_.shape or sc.mean_.ndim != 1:
+            raise ValueError("statistik mean/std SequenceScaler3D tidak konsisten")
+        return sc
 
 
 def build_classifier(n_features, hidden_size, num_layers=1, dropout=0.3, n_classes=3):
@@ -214,6 +240,8 @@ def latih_satu_seed(X_tr_raw, y_tr, *, hidden_size, teknis, seed, clip=1e-15, de
         "scaler": scaler,
         "best_epoch": best_epoch,
         "best_es_loss": best_loss,
+        "n_in_train": int(split_at),
+        "n_early_stop": int(n_es),
         "seed": int(seed),
         "device": dev,
     }
@@ -239,14 +267,94 @@ def latih_lstm(X_tr, y_tr, cfg, teknis, *, seeds, clip=1e-15, device="cpu"):
     }
 
 
-def prediksi_lstm(bundle, X_val):
-    """Rata-ratakan logits lintas 5 seed lalu terapkan softmax -> [[p_rev, p_cont, p_net], ...]."""
+def prediksi_logits_lstm(bundle, X_val):
+    """Rata-ratakan logits lintas seluruh seed -> ndarray (N, 3) float64."""
     np, _, _, _, _ = _impor_torch()
     X_arr = np.asarray(X_val, dtype=np.float32)
     seed_logits = []
     for m in bundle["members"]:
         X_s = m["scaler"].transform(X_arr)
         seed_logits.append(_predict_logits(m["model"], X_s, m["device"]))
-    mean_logits = np.mean(seed_logits, axis=0)
-    probs = softmax_np(mean_logits)
+    return np.mean(seed_logits, axis=0)
+
+
+def prediksi_lstm(bundle, X_val, temperature=1.0):
+    """Rata-ratakan logits lintas seed lalu terapkan softmax(logits / tau)."""
+    temp = float(temperature)
+    if temp <= 0:
+        raise ValueError(f"temperature harus > 0, didapat {temp}")
+    mean_logits = prediksi_logits_lstm(bundle, X_val)
+    probs = softmax_np(mean_logits / temp)
     return [[float(v) for v in row] for row in probs]
+
+
+def simpan_bundle(bundle, checkpoints_dir, *, n_fit_events=None, feature_names=None):
+    """Simpan 5 checkpoint .pt (pure CPU state_dict) + 1 berkas scaler JSON.
+
+    Memverifikasi seluruh seed berbagi statistik SequenceScaler3D yang identik sebelum menulis 1
+    berkas scaler bersama.
+    """
+    np, torch, _, _, _ = _impor_torch()
+    members = bundle["members"]
+    if not members:
+        raise ValueError("bundle kosong, tidak ada model untuk disimpan")
+    cfg = bundle["cfg"]
+    cfg_id = cfg["id"]
+    out_dir = Path(checkpoints_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    ref_scaler = members[0]["scaler"]
+    for m in members[1:]:
+        if not (
+            np.allclose(ref_scaler.mean_, m["scaler"].mean_, rtol=0.0, atol=1e-12)
+            and np.allclose(ref_scaler.std_, m["scaler"].std_, rtol=0.0, atol=1e-12)
+        ):
+            raise ValueError("statistik SequenceScaler3D antar seed tidak identik")
+
+    scaler_name = f"scaler_{cfg_id}.json"
+    scaler_payload = {
+        "cfg_id": cfg_id,
+        "lookback_L": int(cfg["lookback_L"]),
+        "n_fit_events": int(n_fit_events) if n_fit_events is not None else members[0].get("n_in_train"),
+        **ref_scaler.to_dict(feature_names=feature_names),
+    }
+    scaler_path = out_dir / scaler_name
+    scaler_path.write_text(json.dumps(scaler_payload, indent=2, ensure_ascii=False) + "\n")
+
+    ckpt_paths = []
+    for m in members:
+        ckpt_name = f"lstm_{cfg_id}_seed{m['seed']}.pt"
+        ckpt_path = out_dir / ckpt_name
+        cpu_state = {k: v.detach().cpu() for k, v in m["model"].state_dict().items()}
+        torch.save(cpu_state, ckpt_path)
+        ckpt_paths.append(ckpt_path)
+
+    return {"scaler_path": scaler_path, "checkpoint_paths": ckpt_paths}
+
+
+def muat_bundle(checkpoint_paths, scaler_path, cfg, teknis, *, seeds=None, device="cpu"):
+    """Muat ulang ensemble checkpoint .pt + scaler JSON ke mode eval() tanpa melatih ulang."""
+    _, torch, _, _, _ = _impor_torch()
+    scaler_data = json.loads(Path(scaler_path).read_text())
+    scaler = SequenceScaler3D.from_dict(scaler_data)
+    n_features = len(scaler.mean_)
+    dev = torch.device(device)
+
+    members = []
+    for i, ckpt_path in enumerate(checkpoint_paths):
+        model = build_classifier(
+            n_features=n_features,
+            hidden_size=int(cfg["hidden_size"]),
+            num_layers=int(teknis.get("num_layers", 1)),
+            dropout=float(teknis["dropout"]),
+        ).to(dev)
+        state = torch.load(Path(ckpt_path), map_location=dev, weights_only=True)
+        model.load_state_dict(state)
+        model.eval()
+        members.append({
+            "model": model,
+            "scaler": scaler,
+            "seed": int(seeds[i]) if seeds is not None else i,
+            "device": dev,
+        })
+    return {"members": members, "cfg": dict(cfg)}

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Panduan Pemula: Pemodelan LSTM (13 Fitur v2) PDH/PDL XAUUSD H1</title>
+<title>Panduan Pemula: Pemodelan LSTM (RM-22 s.d. Kunci-2) PDH/PDL XAUUSD H1</title>
 <style>
   :root {
     --bg: #f6f8fb;
@@ -48,33 +48,40 @@
     background: rgba(255,255,255,0.14); border: 1px solid rgba(255,255,255,0.22);
   }
   .badge.hl { background: #14b8a6; color: #042f2e; border-color: #2dd4bf; }
+  .badge.lock { background: #fde68a; color: #451a03; border-color: #fcd34d; }
   header.hero h1 { margin: 0 0 10px; font-size: clamp(26px, 4vw, 38px); line-height: 1.2; }
-  header.hero p.lead { margin: 0 0 22px; max-width: 820px; color: #cbd5e1; font-size: 16px; }
+  header.hero p.lead { margin: 0 0 22px; max-width: 860px; color: #cbd5e1; font-size: 16px; }
   .kpi-strip {
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(175px, 1fr)); gap: 12px;
   }
   .kpi {
     background: rgba(255,255,255,0.09); border: 1px solid rgba(255,255,255,0.16);
     border-radius: 12px; padding: 14px 16px;
   }
-  .kpi .k-label { font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.6px; color: #94a3b8; }
-  .kpi .k-val { font-size: 24px; font-weight: 800; color: #fff; margin: 2px 0; }
-  .kpi .k-sub { font-size: 12px; color: #99f6e4; }
+  .kpi .k-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; color: #94a3b8; }
+  .kpi .k-val { font-size: 22px; font-weight: 800; color: #fff; margin: 2px 0; }
+  .kpi .k-sub { font-size: 11.8px; color: #99f6e4; }
 
   nav.top-nav {
     position: sticky; top: 0; z-index: 40;
-    background: rgba(255,255,255,0.94); backdrop-filter: blur(8px);
+    background: rgba(255,255,255,0.95);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
     border-bottom: 1px solid var(--line);
   }
   .nav-inner {
     max-width: 1140px; margin: 0 auto; padding: 10px 20px;
-    display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none;
+    display: flex; gap: 6px; overflow-x: auto;
   }
   .nav-inner a {
-    text-decoration: none; color: var(--muted); font-size: 13px; font-weight: 600;
-    padding: 6px 12px; border-radius: 8px; white-space: nowrap; transition: 0.15s;
+    text-decoration: none; color: var(--muted); font-size: 12.5px; font-weight: 600;
+    padding: 6px 11px; border-radius: 8px; white-space: nowrap; transition: 0.15s;
   }
   .nav-inner a:hover { background: var(--blue-soft); color: var(--blue); }
+  .nav-inner a.nav-new { background: #f0fdfa; color: #0f766e; border: 1px solid #99f6e4; }
+  .nav-inner a.nav-new:hover { background: var(--teal); color: #fff; }
+  .nav-inner a.nav-lock { background: #fff1f2; color: #be123c; border: 1px solid #fecdd3; }
+  .nav-inner a.nav-lock:hover { background: var(--rose); color: #fff; }
 
   main { max-width: 1140px; margin: 0 auto; padding: 28px 20px 64px; }
   section.card {
@@ -82,11 +89,20 @@
     border-radius: var(--radius); box-shadow: var(--shadow);
     padding: 28px; margin-bottom: 24px;
   }
+  section.card.stage-highlight { border-top: 4px solid var(--teal); }
+  section.card.stage-amber { border-top: 4px solid var(--amber); }
+  section.card.stage-violet { border-top: 4px solid var(--violet); }
+  section.card.stage-rose { border-top: 4px solid var(--rose); }
+
   .sec-tag {
     display: inline-block; font-size: 11px; font-weight: 700; text-transform: uppercase;
     letter-spacing: 0.8px; color: var(--teal); background: var(--teal-soft);
     padding: 3px 10px; border-radius: 999px; margin-bottom: 8px;
   }
+  .sec-tag.blue { color: var(--blue); background: var(--blue-soft); }
+  .sec-tag.violet { color: var(--violet); background: var(--violet-soft); }
+  .sec-tag.amber { color: #b45309; background: var(--amber-soft); }
+  .sec-tag.rose { color: #be123c; background: var(--rose-soft); }
   section.card h2 { margin: 0 0 8px; font-size: 23px; color: var(--navy); }
   section.card p.intro { margin: 0 0 18px; color: var(--muted); }
 
@@ -97,6 +113,8 @@
   .callout.amber { border-color: var(--amber); background: #fffbeb; }
   .callout.blue { border-color: var(--blue); background: #eff6ff; }
   .callout.green { border-color: var(--green); background: #f0fdf4; }
+  .callout.rose { border-color: var(--rose); background: #fff1f2; }
+  .callout.violet { border-color: var(--violet); background: #f5f3ff; }
   .callout strong { color: var(--navy); }
 
   .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
@@ -117,9 +135,25 @@
   .step-box.teal { border-top-color: var(--teal); }
   .step-box.amber { border-top-color: var(--amber); }
   .step-box.rose { border-top-color: var(--rose); }
+  .step-box.violet { border-top-color: var(--violet); }
+  .step-box.green { border-top-color: var(--green); }
   .step-num { font-size: 11px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; }
   .step-box h4 { margin: 4px 0 6px; font-size: 15px; }
   .step-box p { margin: 0; font-size: 13.5px; color: var(--muted); }
+
+  .stage-ribbon {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+    background: #f8fafc; border: 1px solid var(--line); border-radius: 12px;
+    padding: 12px 16px; margin: 16px 0; font-size: 13px;
+  }
+  .stage-chip {
+    padding: 4px 10px; border-radius: 999px; font-weight: 700;
+    background: #fff; border: 1px solid var(--line); color: var(--navy);
+  }
+  .stage-chip.done { background: var(--green-soft); border-color: #86efac; color: #166534; }
+  .stage-chip.active { background: var(--teal); border-color: var(--teal); color: #fff; }
+  .stage-chip.lock { background: var(--rose-soft); border-color: #fda4af; color: #9f1239; }
+  .stage-arrow { color: #94a3b8; font-weight: 800; }
 
   .table-wrap { overflow-x: auto; margin: 14px 0; }
   table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
@@ -137,6 +171,22 @@
     display: inline-block; font-size: 10px; font-weight: 800; padding: 1px 6px; border-radius: 999px;
     background: var(--teal-soft); color: #0f766e; margin-left: 4px; vertical-align: middle;
   }
+  .pill-ok {
+    display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px;
+    background: var(--green-soft); color: #166534;
+  }
+  .pill-rev {
+    display: inline-block; font-size: 11.5px; font-weight: 800; padding: 3px 10px; border-radius: 999px;
+    background: var(--teal-soft); color: #0f766e;
+  }
+  .pill-cont {
+    display: inline-block; font-size: 11.5px; font-weight: 800; padding: 3px 10px; border-radius: 999px;
+    background: var(--blue-soft); color: #1d4ed8;
+  }
+  .pill-abs {
+    display: inline-block; font-size: 11.5px; font-weight: 800; padding: 3px 10px; border-radius: 999px;
+    background: #e2e8f0; color: #334155;
+  }
 
   .pill-bar { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 16px; }
   button.pill {
@@ -147,13 +197,13 @@
   button.pill.active { background: var(--teal); color: #fff; border-color: var(--teal); }
 
   .sim-panel {
-    background: #f8fafc; border: 1px solid var(--line); border-radius: 12px; padding: 18px; margin-top: 12px;
+    background: #f8fafc; border: 1px solid var(--line); border-radius: 12px; padding: 18px; margin-top: 14px;
   }
   .slider-row { display: flex; align-items: center; gap: 12px; margin: 10px 0; flex-wrap: wrap; }
-  .slider-row label { min-width: 170px; font-size: 13.5px; font-weight: 600; }
+  .slider-row label { min-width: 190px; font-size: 13.5px; font-weight: 600; }
   .slider-row input[type=range] { flex: 1; min-width: 160px; accent-color: var(--teal); }
   .slider-row .val {
-    min-width: 66px; text-align: right; font-weight: 700; font-variant-numeric: tabular-nums;
+    min-width: 72px; text-align: right; font-weight: 700; font-variant-numeric: tabular-nums;
     background: #fff; border: 1px solid var(--line); padding: 3px 8px; border-radius: 6px;
   }
 
@@ -166,15 +216,32 @@
   .gate-card p { margin: 0; font-size: 13.5px; color: var(--muted); }
 
   .bar-row { display: flex; align-items: center; gap: 10px; margin: 7px 0; font-size: 13px; }
-  .bar-label { width: 152px; font-weight: 600; flex-shrink: 0; }
+  .bar-label { width: 160px; font-weight: 600; flex-shrink: 0; }
   .bar-track { flex: 1; background: #e2e8f0; height: 22px; border-radius: 6px; overflow: hidden; }
-  .bar-fill { height: 100%; border-radius: 6px; transition: width 0.35s ease; }
-  .bar-num { width: 62px; text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .bar-fill { height: 100%; border-radius: 6px; transition: width 0.25s ease; }
+  .bar-num { width: 64px; text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
 
   .tensor-grid { display: grid; grid-template-columns: repeat(13, 1fr); gap: 3px; margin-top: 8px; min-width: 640px; }
   .t-cell {
     height: 26px; border-radius: 4px; display: flex; align-items: center; justify-content: center;
     font-size: 10px; font-weight: 700; color: #0f172a;
+  }
+
+  .zone-bar {
+    position: relative; display: grid; grid-template-columns: 30% 30% 40%;
+    height: 44px; border-radius: 10px; overflow: hidden; border: 1px solid var(--line);
+    margin: 14px 0 8px; font-size: 12.5px; font-weight: 700;
+  }
+  .zone-cont { background: var(--blue-soft); color: #1e40af; display: flex; align-items: center; justify-content: center; }
+  .zone-abs { background: #f1f5f9; color: #475569; display: flex; align-items: center; justify-content: center; border-left: 2px dashed #64748b; border-right: 2px dashed #64748b; }
+  .zone-rev { background: var(--teal-soft); color: #0f766e; display: flex; align-items: center; justify-content: center; }
+  .zone-marker {
+    position: absolute; top: 0; bottom: 0; width: 4px; background: var(--rose);
+    box-shadow: 0 0 0 2px #fff; transition: left 0.2s ease;
+  }
+  .zone-ticks {
+    display: flex; justify-content: space-between; font-size: 11.5px; color: var(--muted);
+    font-variant-numeric: tabular-nums;
   }
 
   .gloss-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
@@ -189,23 +256,85 @@
   }
   .rm-item.done { border-left: 5px solid var(--green); background: #f0fdf4; }
   .rm-item.now { border-left: 5px solid var(--teal); background: #f0fdfa; border-color: #99f6e4; }
-  .rm-item.next { border-left: 5px solid var(--blue); background: #eff6ff; }
-  .rm-item.focus { border-left: 5px solid var(--amber); background: #fffbeb; border-color: #fde68a; }
   .rm-item.lock { border-left: 5px solid var(--rose); background: #fff1f2; border-color: #fecdd3; }
   .rm-badge {
-    min-width: 118px; font-size: 12px; font-weight: 800; padding: 4px 10px;
+    min-width: 124px; font-size: 12px; font-weight: 800; padding: 4px 10px;
     border-radius: 999px; text-align: center; background: #fff; border: 1px solid var(--line);
     color: var(--navy); flex-shrink: 0;
   }
   .rm-body strong { color: var(--navy); font-size: 14.5px; }
   .rm-body p { margin: 2px 0 0; font-size: 13.5px; color: var(--muted); }
+
   .mini-calc {
     background: #0f172a; color: #e2e8f0; border-radius: 12px; padding: 16px 18px;
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.8px; line-height: 1.6;
-    overflow-x: auto; margin: 12px 0;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.6px; line-height: 1.65;
+    overflow-x: auto; margin: 12px 0; white-space: pre;
   }
   .mini-calc .hl { color: #5eead4; font-weight: 700; }
   .mini-calc .warn { color: #fcd34d; font-weight: 700; }
+  .mini-calc .ok { color: #86efac; font-weight: 700; }
+  .mini-calc .bad { color: #fda4af; font-weight: 700; }
+
+  /* Visual Flow End-to-End */
+  .flow-stack { display: flex; flex-direction: column; gap: 0; margin: 14px 0; }
+  .flow-stage {
+    border: 1.5px solid var(--line); border-left: 6px solid var(--teal);
+    border-radius: 13px; padding: 16px 18px; background: #fff;
+  }
+  .flow-stage.s-blue { border-left-color: var(--blue); }
+  .flow-stage.s-teal { border-left-color: var(--teal); }
+  .flow-stage.s-violet { border-left-color: var(--violet); }
+  .flow-stage.s-amber { border-left-color: var(--amber); }
+  .flow-stage.s-rose { border-left-color: var(--rose); }
+  .flow-stage.s-slate { border-left-color: #475569; }
+  .flow-stage-head {
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 8px; margin-bottom: 10px;
+  }
+  .flow-stage-title { font-size: 15.5px; font-weight: 800; color: var(--navy); }
+  .flow-count {
+    font-size: 11.5px; font-weight: 800; padding: 3px 10px; border-radius: 999px;
+    background: #f1f5f9; color: var(--navy); border: 1px solid var(--line);
+  }
+  .flow-down {
+    text-align: center; color: #64748b; font-size: 12px; font-weight: 800;
+    padding: 5px 0; letter-spacing: 0.3px;
+  }
+  .flow-nodes {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px;
+  }
+  .f-node {
+    border: 1.5px solid var(--line); border-radius: 10px; padding: 11px 13px;
+    background: #f8fafc; font-size: 13px; transition: opacity 0.2s, transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+  }
+  .f-node strong { display: block; color: var(--navy); margin-bottom: 3px; font-size: 13.5px; }
+  .f-node p { margin: 0; color: var(--muted); font-size: 12.6px; line-height: 1.5; }
+  .f-node.hl-on {
+    border-color: var(--teal); background: #f0fdfa;
+    box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.16); transform: translateY(-1px);
+  }
+  .f-node.hl-dim { opacity: 0.32; }
+  .f-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+  .f-tag {
+    font-size: 10.5px; font-weight: 700; padding: 1px 7px; border-radius: 999px;
+    background: #e2e8f0; color: #334155;
+  }
+  .f-tag.t-scaler { background: #e0e7ff; color: #3730a3; }
+  .f-tag.t-seed { background: var(--green-soft); color: #166534; }
+  .f-tag.t-logits { background: var(--amber-soft); color: #92400e; }
+  .f-tag.t-softmax { background: var(--violet-soft); color: #5b21b6; }
+  .f-tag.t-ev { background: var(--teal-soft); color: #0f766e; }
+
+  .fold-bars { display: flex; flex-direction: column; gap: 5px; margin: 10px 0 12px; }
+  .fold-bar-row { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+  .fold-bar-lbl { width: 52px; font-weight: 700; color: var(--navy); flex-shrink: 0; }
+  .fold-track {
+    flex: 1; display: flex; height: 22px; border-radius: 6px; overflow: hidden;
+    background: #f1f5f9; border: 1px solid var(--line);
+  }
+  .fold-tr85 { background: #3b82f6; color: #fff; font-size: 10.5px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .fold-es15 { background: #f59e0b; color: #fff; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .fold-val { background: #0d9488; color: #fff; font-size: 10.5px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
 
   footer { text-align: center; font-size: 13px; color: var(--muted); margin-top: 24px; }
 </style>
@@ -217,34 +346,38 @@
     <div class="badge-row">
       <span class="badge hl">Panduan Interaktif Pemula ML · v2 (13 Fitur)</span>
       <span class="badge">xauusd-pdhl-ml · Pipeline v1.1.0</span>
-      <span class="badge">src/model/lstm/ (Tahap 1–3)</span>
-      <span class="badge">Kunci Uji 2025–2026 Tetap Disegel</span>
+      <span class="badge">src/model/lstm/ (RM-22 s.d. Kunci-2)</span>
+      <span class="badge lock">🔒 Kunci-2 LSTM Tersegel · Kunci Uji 2025–2026 Tetap Tertutup</span>
     </div>
-    <h1>Memahami Pemodelan LSTM (13 Fitur v2) pada XAUUSD H1 PDH/PDL</h1>
+    <h1>Memahami Pemodelan LSTM (RM-22 s.d. 🔒 Kunci-2) pada XAUUSD H1 PDH/PDL</h1>
     <p class="lead">
-      Panduan visual lengkap yang membedah alur proyek <code>pdhl_data</code>, model rekan Anda (<strong>Gradient Boosting</strong>),
-      dan model <strong>LSTM v2 (13 fitur <em>theory-driven</em>)</strong> beserta arti setiap singkatan fitur, tujuan, dan hasil eksperimen riilnya.
+      Panduan visual lengkap dari awal hingga pembekuan pra-uji: alur data <code>pdhl_data</code>, perbandingan <strong>Gradient Boosting</strong> vs <strong>LSTM v2 (13 fitur)</strong>, validasi <em>walk-forward</em> (RM-24), pelatihan <strong>Model Akhir (RM-25)</strong>, <strong>Kalibrasi Suhu τ 2024 (RM-26)</strong>, <strong>Aturan Keputusan R (RM-27)</strong>, hingga <strong>Segel Manifest SHA-256 (🔒 Kunci-2)</strong>.
     </p>
     <div class="kpi-strip">
       <div class="kpi">
-        <div class="k-label">Model LSTM Terpilih</div>
+        <div class="k-label">RM-24/25 · Model Akhir</div>
         <div class="k-val">L46_h32</div>
-        <div class="k-sub">2 sesi penuh (46 jam) · 32 unit</div>
+        <div class="k-sub">OOF 0,9185 · 5× .pt + scaler (diff 0)</div>
       </div>
       <div class="kpi">
-        <div class="k-label">OOF Log-Loss (2019–2023)</div>
-        <div class="k-val">0,9185</div>
-        <div class="k-sub">−0,0513 vs B0 · −0,0048 vs GB!</div>
+        <div class="k-label">RM-26 · Kalibrasi 2024</div>
+        <div class="k-val">τ = 1,2375</div>
+        <div class="k-sub">LL 0,9655→0,9597 · ECE −33%</div>
       </div>
       <div class="kpi">
-        <div class="k-label">Parity Baseline B0/B1</div>
-        <div class="k-val">100% Sama</div>
-        <div class="k-sub">SHA-256 identik dgn GB</div>
+        <div class="k-label">RM-27 · Aturan Keputusan</div>
+        <div class="k-val">δ = 0,1R</div>
+        <div class="k-sub">m_rev +0,5627R · 2024: +1,91R</div>
+      </div>
+      <div class="kpi">
+        <div class="k-label">🔒 Kunci-2 LSTM</div>
+        <div class="k-val">8/8 Tersegel</div>
+        <div class="k-sub">SHA-256 OK · 053c5a0e…</div>
       </div>
       <div class="kpi">
         <div class="k-label">Audit &amp; Unit Test</div>
-        <div class="k-val">256 / 256 OK</div>
-        <div class="k-sub">Uji pemotongan L=96: 0 beda</div>
+        <div class="k-val">26/26 LSTM</div>
+        <div class="k-sub">259 OK (.venv) · verify 19/19</div>
       </div>
     </div>
   </div>
@@ -252,17 +385,227 @@
 
 <nav class="top-nav" aria-label="Navigasi bagian">
   <div class="nav-inner">
+    <a href="#flow-lengkap" class="nav-new">🗺️ Flow Lengkap (Logits/Seed/Softmax)</a>
     <a href="#peta">1. Peta Proyek</a>
     <a href="#gb-vs-lstm">2. GB vs LSTM</a>
-    <a href="#fitur">3. 13 Fitur &amp; Arti Singkatan</a>
-    <a href="#otak-lstm">4. Otak LSTM &amp; Early Stop</a>
-    <a href="#walk-forward">5. Walk-Forward &amp; Log-Loss</a>
-    <a href="#hasil">6. Hasil Riil v2</a>
-    <a href="#glosarium">7. Glosarium &amp; Tahap Berikutnya</a>
+    <a href="#fitur">3. RM-22: 13 Fitur</a>
+    <a href="#otak-lstm">4. Otak LSTM</a>
+    <a href="#walk-forward">5. RM-23–24: Walk-Forward</a>
+    <a href="#hasil">6. Hasil RM-24</a>
+    <a href="#rm25" class="nav-new">7. RM-25: Model Akhir</a>
+    <a href="#rm26" class="nav-new">8. RM-26: Kalibrasi τ</a>
+    <a href="#rm27" class="nav-new">9. RM-27: Keputusan &amp; R</a>
+    <a href="#kunci2" class="nav-lock">10. 🔒 Kunci-2</a>
+    <a href="#glosarium">11. Glosarium &amp; Roadmap</a>
   </div>
 </nav>
 
 <main>
+
+<!-- SECTION 0 : FLOW LENGKAP INTERAKTIF -->
+<section class="card stage-highlight" id="flow-lengkap">
+  <span class="sec-tag">Peta Visual End-to-End · Input → Walk-Forward → Model Akhir → Kalibrasi → Keputusan → Kunci-2</span>
+  <h2>🗺️ Flow Lengkap Perjalanan Data: Di Mana Scaler, 5 Seed, Logits, Softmax, &amp; <code>E_rev</code> Terjadi?</h2>
+  <p class="intro">
+    Klik tombol sorot di bawah untuk langsung melihat <strong>di tahap RM mana saja</strong> setiap komponen muncul (misalnya kapan <code>logits</code> dipakai <code>CrossEntropyLoss</code>, kapan <code>Softmax</code> masih mentah <code>τ=1</code> vs terkalibrasi <code>/τ</code>, dan kapan <code>E_rev/E_cont</code> baru dihitung).
+  </p>
+
+  <div class="pill-bar" id="flowFilterBar">
+    <button type="button" class="pill active" onclick="filterFlow('all', this)">Tampilkan Semua Alur</button>
+    <button type="button" class="pill" onclick="filterFlow('scaler', this)">📏 Sorot: Scaler (z-score)</button>
+    <button type="button" class="pill" onclick="filterFlow('seed', this)">🌱 Sorot: 5 Seed &amp; Pengulangan</button>
+    <button type="button" class="pill" onclick="filterFlow('logits', this)">⚡ Sorot: Logits &amp; CrossEntropyLoss</button>
+    <button type="button" class="pill" onclick="filterFlow('softmax', this)">🎯 Sorot: Softmax (τ=1 vs /τ)</button>
+    <button type="button" class="pill" onclick="filterFlow('ev', this)">💰 Sorot: Hitung E_rev / E_cont</button>
+  </div>
+  <div class="callout blue" id="flowHint" style="margin:0 0 14px">
+    <strong>Mode: Semua Alur.</strong> Ikuti dari atas ke bawah: <strong>RM-22</strong> (input) → <strong>RM-24</strong> (<em>walk-forward</em> 250× latih) → <strong>RM-25</strong> (model akhir 5× latih) → <strong>RM-26</strong> (kalibrasi <code>τ</code>, 0× latih) → <strong>RM-27</strong> (aturan keputusan <code>E_rev/E_cont</code>) → <strong>🔒 Kunci-2</strong>.
+  </div>
+
+  <div class="flow-stack">
+    <!-- TAHAP 1: INPUT -->
+    <div class="flow-stage s-slate">
+      <div class="flow-stage-head">
+        <div class="flow-stage-title">1. INPUT MENTAH (RM-22 · <code>runs/tesis/data/</code>)</div>
+        <span class="flow-count">0× Latih LSTM · 13 Fitur Sekuensial v2</span>
+      </div>
+      <div class="flow-nodes">
+        <div class="f-node" data-tags="input">
+          <strong>📦 Data Event &amp; Bar Bersih (v1.1.0)</strong>
+          <p><code>dev</code> 2016–2023 = <strong>1.841 event</strong> · <code>calib</code> 2024 = <strong>227 event</strong> · <code>kunci_uji</code> 2025–2026 = <strong>341 event (TERSEGEL)</strong>.</p>
+        </div>
+        <div class="f-node" data-tags="input">
+          <strong>🎞️ Tensor 3D Mentah <code>(N, L, 13)</code></strong>
+          <p>Setiap event mengambil jendela <code>L</code> candle terakhir sampai <code>t*</code> × 13 fitur (<code>s01–s08, s13</code> numerik + <code>s09–s12</code> siklik <code>sin/cos</code>). <em>Belum ada scaler, belum ada logits.</em></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow-down">▼ Masuk ke RM-24 (Hanya data <code>dev</code> 2016–2023; <code>calib</code> 2024 belum disentuh) ▼</div>
+
+    <!-- TAHAP 2: WALK-FORWARD -->
+    <div class="flow-stage s-blue">
+      <div class="flow-stage-head">
+        <div class="flow-stage-title">2. WALK-FORWARD 2019–2023 (RM-24 · Pilih 1 Resep dari 10 Konfigurasi)</div>
+        <span class="flow-count">10 konfig × 5 fold × 5 seed = 250× Latih LSTM</span>
+      </div>
+
+      <p style="margin:0 0 6px;font-size:12.8px;color:var(--muted)">
+        <strong>Pembagian 5 Lipatan (<em>Expanding Walk-Forward</em> + <em>Purging</em>)</strong> — untuk setiap 1 dari 10 konfigurasi (<code>L ∈ {23,40,46,60,96} × h ∈ {16,32}</code>):
+      </p>
+      <div class="fold-bars" aria-label="Pembagian 5 fold walk-forward">
+        <div class="fold-bar-row"><div class="fold-bar-lbl">Fold 1</div><div class="fold-track"><div class="fold-tr85" style="width:32%">2016–18 (85%)</div><div class="fold-es15" style="width:6%">15%</div><div class="fold-val" style="width:12%">Val 2019 (227)</div></div></div>
+        <div class="fold-bar-row"><div class="fold-bar-lbl">Fold 2</div><div class="fold-track"><div class="fold-tr85" style="width:42%">2016–19 (85%)</div><div class="fold-es15" style="width:8%">15%</div><div class="fold-val" style="width:12%">Val 2020 (227)</div></div></div>
+        <div class="fold-bar-row"><div class="fold-bar-lbl">Fold 3</div><div class="fold-track"><div class="fold-tr85" style="width:53%">2016–20 (85%)</div><div class="fold-es15" style="width:9%">15%</div><div class="fold-val" style="width:12%">Val 2021 (236)</div></div></div>
+        <div class="fold-bar-row"><div class="fold-bar-lbl">Fold 4</div><div class="fold-track"><div class="fold-tr85" style="width:64%">2016–21 (85%)</div><div class="fold-es15" style="width:11%">15%</div><div class="fold-val" style="width:12%">Val 2022 (236)</div></div></div>
+        <div class="fold-bar-row"><div class="fold-bar-lbl">Fold 5</div><div class="fold-track"><div class="fold-tr85" style="width:75%">2016–22 (85%)</div><div class="fold-es15" style="width:13%">15%</div><div class="fold-val" style="width:12%">Val 2023 (226)</div></div></div>
+      </div>
+
+      <div class="flow-nodes">
+        <div class="f-node" data-tags="scaler seed">
+          <strong>A. Di dalam 85% Latih Fold (× 5 Seed)</strong>
+          <p><code>SequenceScaler3D.fit_transform</code> hanya di 85% fold (z-score ±10, 4 siklik skip). Diulang untuk <strong>5 seed</strong> (<code>20261119..20261123</code>).</p>
+          <div class="f-tags"><span class="f-tag t-scaler">Scaler fit (85%)</span><span class="f-tag t-seed">5 Seed</span></div>
+        </div>
+        <div class="f-node" data-tags="logits softmax">
+          <strong>B. Latih Bobot (85%) &amp; Early-Stop (15%)</strong>
+          <p>85%: LSTM keluar <strong>logits</strong> → <strong><code>CrossEntropyLoss</code></strong> (Softmax+Log-Loss) + <code>AdamW</code> ubah bobot. 15%: <strong>logits</strong> → <code>Softmax(τ=1)</code> → cek Log-Loss (<em>patience</em>=12, tanpa ubah bobot).</p>
+          <div class="f-tags"><span class="f-tag t-logits">Logits + CrossEntropyLoss</span><span class="f-tag t-softmax">Softmax τ=1 (ES)</span></div>
+        </div>
+        <div class="f-node" data-tags="scaler seed logits softmax">
+          <strong>C. Prediksi Tahun Validasi (OOF)</strong>
+          <p>Data tahun ujian <code>y</code> masuk <code>scaler.transform</code> → 5 seed keluar <strong>5 pasang logits</strong> → dirata-rata jadi <strong><code>mean_logits</code></strong> → <strong><code>Softmax(τ=1)</code> mentah</strong> → hitung <strong>OOF Log-Loss</strong>. <em>(Belum hitung <code>E_rev</code>!)</em></p>
+          <div class="f-tags"><span class="f-tag t-logits">mean_logits (5 seed)</span><span class="f-tag t-softmax">Softmax τ=1 (mentah)</span></div>
+        </div>
+        <div class="f-node" data-tags="seed">
+          <strong>D. Pilih 1 Pemenang dari 10 Konfig</strong>
+          <p>Gabungkan OOF 5 tahun (<code>1.152</code> event) → bandingkan 10 skor → <strong>MENANG: <code>L46_h32</code> (<code>0,9185</code>)</strong>. Ke-250 model sementara dibuang; yang dibawa lanjut hanya resep <code>L=46, h=32</code>.</p>
+          <div class="f-tags"><span class="f-tag t-ev">★ Terpilih: L46_h32</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow-down">▼ Bawa 1 resep pemenang <code>L46_h32</code> ke RM-25 (Tanpa Walk-Forward lagi!) ▼</div>
+
+    <!-- TAHAP 3: MODEL AKHIR -->
+    <div class="flow-stage s-teal">
+      <div class="flow-stage-head">
+        <div class="flow-stage-title">3. LATIH MODEL AKHIR (RM-25 · <code>L46_h32</code> Penuh di Seluruh <code>dev</code> 2016–2023)</div>
+        <span class="flow-count">1 konfig × 1 dev penuh × 5 seed = 5× Latih LSTM</span>
+      </div>
+      <div class="flow-nodes">
+        <div class="f-node" data-tags="scaler">
+          <strong>A. Split Kronologis <code>dev</code> &amp; Fit Scaler</strong>
+          <p>Seluruh <code>1.841</code> event (0 purge) dibelah: <strong>85% awal (<code>1.565</code>)</strong> untuk <code>SequenceScaler3D.fit_transform</code> → simpan <strong><code>scaler_L46_h32.json</code></strong>; <strong>15% ujung (<code>276</code>)</strong> untuk <em>early stop</em>.</p>
+          <div class="f-tags"><span class="f-tag t-scaler">Simpan scaler_L46_h32.json</span></div>
+        </div>
+        <div class="f-node" data-tags="seed logits softmax">
+          <strong>B. Latih 5 Seed dari Nol</strong>
+          <p>Seed <code>20261119..20261123</code> dilatih penuh memakai <strong><code>Logits → CrossEntropyLoss + AdamW</code></strong> (85%) dan dipantau <strong><code>Softmax(τ=1) → Log-Loss</code></strong> (15%; berhenti rata-rata epoch <code>24,8</code>, ES <code>0,8975</code>).</p>
+          <div class="f-tags"><span class="f-tag t-seed">5 Seed</span><span class="f-tag t-logits">Logits + CrossEntropyLoss</span><span class="f-tag t-softmax">Softmax τ=1 (ES)</span></div>
+        </div>
+        <div class="f-node" data-tags="seed logits">
+          <strong>C. Simpan 5 <code>.pt</code> &amp; Uji Round-Trip</strong>
+          <p>Simpan <strong>5 file bobot <code>.pt</code></strong> + <strong>1 <code>scaler_L46_h32.json</code></strong> ke <code>checkpoints/</code>. Muat ulang dari disk dan cocokkan <strong>logits</strong> (selisih = <strong><code>0,00e+00</code></strong>). <em>(Data 2024 belum dibaca!)</em></p>
+          <div class="f-tags"><span class="f-tag t-seed">5 File .pt</span><span class="f-tag t-logits">Audit Logits Diff = 0</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow-down">▼ Bawa 5 file <code>.pt</code> + <code>scaler_L46_h32.json</code> ke RM-26 (Data <code>calib</code> 2024 baru masuk di sini!) ▼</div>
+
+    <!-- TAHAP 4: KALIBRASI -->
+    <div class="flow-stage s-violet">
+      <div class="flow-stage-head">
+        <div class="flow-stage-title">4. KALIBRASI SUHU <code>τ</code> (RM-26 · <em>Temperature Scaling</em> di <code>calib</code> 2024, 227 Event)</div>
+        <span class="flow-count">0× Latih LSTM · Bobot .pt Beku (mode eval)</span>
+      </div>
+      <div class="flow-nodes">
+        <div class="f-node" data-tags="scaler">
+          <strong>A. Transformasi Data 2024</strong>
+          <p><code>227</code> event mentah 2024 (<code>46 × 13</code>) diterjemahkan lewat <strong><code>scaler.transform</code></strong> memakai <code>scaler_L46_h32.json</code> dari RM-25 (<strong>tidak di-fit ulang</strong>).</p>
+          <div class="f-tags"><span class="f-tag t-scaler">scaler.transform (beku)</span></div>
+        </div>
+        <div class="f-node" data-tags="seed logits">
+          <strong>B. Inferensi 5 <code>.pt</code> → <code>mean_logits</code></strong>
+          <p>Lewatkan ke <strong>5 file <code>.pt</code></strong> dalam mode <code>eval()</code> → keluar 5 pasang logits → dirata-rata menjadi <strong><code>mean_logits = [z_rev, z_cont, z_net]</code></strong> (disimpan di <code>calib_pred_lstm.csv</code>).</p>
+          <div class="f-tags"><span class="f-tag t-seed">5 .pt (eval)</span><span class="f-tag t-logits">Simpan mean_logits</span></div>
+        </div>
+        <div class="f-node" data-tags="logits softmax">
+          <strong>C. Cari <code>τ</code> &amp; <code>Softmax(mean_logits / τ)</code></strong>
+          <p><em>Golden-section search</em> <code>[0,05..20,0]</code> (56 iterasi) mencari <code>τ</code> peminimal Log-Loss 2024 → <strong><code>τ = 1,237549</code></strong> → hitung <strong><code>Softmax(mean_logits / 1,237549)</code></strong> = peluang terkalibrasi <strong><code>p_cal</code></strong> (LL <code>0,9655→0,9597</code>, ECE −33%).</p>
+          <div class="f-tags"><span class="f-tag t-softmax">Softmax(z / τ) → p_cal</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow-down">▼ Bawa peluang terkalibrasi <code>p_cal</code> (sudah Softmax, bukan logits!) ke RM-27 ▼</div>
+
+    <!-- TAHAP 5: ATURAN KEPUTUSAN -->
+    <div class="flow-stage s-amber">
+      <div class="flow-stage-head">
+        <div class="flow-stage-title">5. ATURAN KEPUTUSAN (RM-27 · Ubah <code>p_cal</code> → Reversal / Continuation / Abstain)</div>
+        <span class="flow-count">0× Latih LSTM · Tidak Menyentuh .pt maupun Logits</span>
+      </div>
+      <div class="flow-nodes">
+        <div class="f-node" data-tags="ev">
+          <strong>A. Estimasi <code>m_rev</code> &amp; <code>m_cont</code> (dari <code>dev</code>)</strong>
+          <p>Dari <code>385</code> event Netral <code>dev</code>: <strong><code>m_rev = +0,5627R</code></strong> dan <strong><code>m_cont = −0,2813R</code></strong> (<code>= −0,5·m_rev</code>).</p>
+          <div class="f-tags"><span class="f-tag t-ev">Parameter Netral dev</span></div>
+        </div>
+        <div class="f-node" data-tags="ev">
+          <strong>B. Hitung Nilai Harapan <code>E_rev</code> &amp; <code>E_cont</code></strong>
+          <p>Masukkan <strong><code>p_cal</code></strong> (hasil Softmax RM-26) ke:<br><code>E_rev = (+2)·p_rev − p_cont + 0,5627·p_net</code><br><code>E_cont = −0,5 · E_rev</code></p>
+          <div class="f-tags"><span class="f-tag t-ev">Hitung E_rev &amp; E_cont</span></div>
+        </div>
+        <div class="f-node" data-tags="ev">
+          <strong>C. Ambang <code>δ = 0,1R</code> → Aksi &amp; <code>realized_R</code></strong>
+          <p><code>E_rev ≥ +0,1R</code> → <strong>Reversal</strong> (<code>R_rev</code>)<br><code>E_rev ≤ −0,2R</code> → <strong>Continuation</strong> (<code>R_cont</code>)<br>Di antaranya → <strong>Abstain</strong> (<code>0R</code>).<br><em>Pra-uji 2024: 103 Rev / 0 Cont / 124 Abs (+1,91R).</em></p>
+          <div class="f-tags"><span class="f-tag t-ev">Keputusan &amp; realized_R</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow-down">▼ Bekukan seluruh komponen sebelum menyentuh data uji ▼</div>
+
+    <!-- TAHAP 6: KUNCI-2 -->
+    <div class="flow-stage s-rose">
+      <div class="flow-stage-head">
+        <div class="flow-stage-title">6. 🔒 KUNCI-2 (Segel SHA-256) ⇢ 🎯 UJI FINAL (341 Event 2025–2026, Belum Dibuka)</div>
+        <span class="flow-count">8 Berkas Beku (0o444) · 13 Skrip · Verify OK</span>
+      </div>
+      <div class="flow-nodes">
+        <div class="f-node" data-tags="scaler seed ev softmax">
+          <strong>🔒 Paket Beku <code>kunci_2/</code></strong>
+          <p>Menyegel <strong>5 <code>.pt</code></strong> + <strong><code>scaler_L46_h32.json</code></strong> + <strong><code>τ = 1,237549</code></strong> + <strong><code>m_rev = +0,5627R</code></strong> + <strong><code>δ = 0,1R</code></strong> + B0/B1 dalam <code>MANIFEST_KUNCI_2_LSTM.json</code>.</p>
+          <div class="f-tags"><span class="f-tag t-scaler">Scaler</span><span class="f-tag t-seed">5 .pt</span><span class="f-tag t-softmax">τ</span><span class="f-tag t-ev">m_rev &amp; δ</span></div>
+        </div>
+        <div class="f-node" data-tags="scaler seed logits softmax ev">
+          <strong>🎯 Eksekusi Tunggal Uji Final *(Langkah Berikutnya)*</strong>
+          <p>Nanti 341 event <code>kunci_uji/</code> akan melewati rantai beku 1× saja: <code>scaler.transform</code> → <code>5 .pt (eval)</code> → <code>mean_logits</code> → <code>Softmax(z / τ)</code> → <code>E_rev/E_cont</code> → evaluasi resmi RQ2.1 &amp; RQ2.2.</p>
+          <div class="f-tags"><span class="f-tag t-logits">1× Jalankan Penuh</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3 style="margin:18px 0 6px;font-size:16px">📌 Tabel Contekan Cepat: Lokasi Scaler, Seed, Logits, Softmax, &amp; <code>E_rev</code> per RM</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Tahap</th><th>Scaler</th><th>5 Seed</th><th>Logits (<code>z</code>)</th><th>Softmax (<code>p</code>)</th><th>Hitung <code>E_rev/E_cont</code></th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>RM-22–23</strong> (Fitur &amp; B0/B1)</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td></tr>
+        <tr><td><strong>RM-24</strong> (Walk-Forward)</td><td>✅ Fit ulang per fold (85%)</td><td>✅ <code>250×</code> latih</td><td>✅ Latih &amp; <code>mean_logits</code> OOF</td><td>✅ Mentah (<code>τ = 1</code>)</td><td>❌</td></tr>
+        <tr><td><strong>RM-25</strong> (Model Akhir)</td><td>✅ Fit 85% <code>dev</code> → simpan JSON</td><td>✅ <code>5×</code> latih → 5 <code>.pt</code></td><td>✅ Latih &amp; uji round-trip</td><td>✅ Hanya internal 15% ES</td><td>❌</td></tr>
+        <tr class="win"><td><strong>RM-26</strong> (Kalibrasi 2024)</td><td>✅ <code>transform</code> saja (beku)</td><td>✅ 5 <code>.pt</code> (<code>eval</code>)</td><td>✅ Disimpan di CSV 2024</td><td>✅ <strong><code>Softmax(z / τ)</code></strong></td><td>❌</td></tr>
+        <tr class="win"><td><strong>RM-27</strong> (Keputusan)</td><td>❌</td><td>❌</td><td>❌ <em>(baca <code>p_cal</code>)</em></td><td>❌ <em>(sudah jadi)</em></td><td>✅ <strong>DI SINI</strong></td></tr>
+        <tr><td><strong>🔒 Kunci-2</strong></td><td colspan="5">Membekukan &amp; menyegel SHA-256 seluruh paket (5 <code>.pt</code> + scaler + <code>τ</code> + <code>m_rev</code> + <code>δ</code>)</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
 
 <!-- SECTION 1 -->
 <section class="card" id="peta">
@@ -296,7 +639,7 @@
   </div>
 
   <div class="callout">
-    <strong>Analogi Sekolah:</strong> Data <code>dev</code> (2016–2023) = <em>buku latihan &amp; try out</em>; <code>calib</code> (2024) = <em>setel kepercayaan diri</em> model; <code>kunci_uji</code> (2025–2026) = <em>ujian nasional</em> yang masih disegel dan baru dibuka sekali di akhir (Kunci-2).
+    <strong>Analogi Sekolah:</strong> Data <code>dev</code> (2016–2023) = <em>buku latihan &amp; try out</em> (RM-22 s.d. RM-25); <code>calib</code> (2024) = <em>setel termometer kepercayaan diri</em> model (RM-26) &amp; cek aturan keputusan (RM-27); <code>kunci_uji</code> (2025–2026) = <em>ujian nasional</em> yang masih disegel dan baru dibuka 1× setelah Kunci-2.
   </div>
 
   <div class="callout blue">
@@ -308,28 +651,28 @@
 <!-- SECTION 2 -->
 <section class="card" id="gb-vs-lstm">
   <span class="sec-tag">Bagian 2 · Arsitektur Sejajar</span>
-  <h2>Analisis Model Teman (Gradient Boosting) vs Model Anda (LSTM v2)</h2>
+  <h2>Perbandingan Jalur Gradient Boosting vs Jalur LSTM v2</h2>
   <p class="intro">
-    Di folder <code>src/model/</code> kini ada dua subpaket sejajar secara <strong>apple-to-apple</strong>: <code>gradient_boosting/</code> (LightGBM) dan <code>lstm/</code> (PyTorch LSTM).
+    Di folder <code>src/model/</code> ada dua subpaket sejajar secara <strong>apple-to-apple</strong> yang membaca data <code>runs/tesis/data/</code> yang 100% sama: <code>gradient_boosting/</code> (LightGBM) dan <code>lstm/</code> (PyTorch LSTM).
   </p>
 
   <div class="grid-2">
     <div class="mini-box" style="border-top:4px solid var(--blue)">
-      <h3>🌳 Jalur Teman: <code>src/model/gradient_boosting/</code></h3>
+      <h3>🌳 Jalur Gradient Boosting: <code>src/model/gradient_boosting/</code></h3>
       <p style="margin-bottom:10px">Menggunakan <strong>LightGBM</strong> (pohon keputusan) yang membaca <strong>tabel 2D</strong> (1 foto snapshot di bar <code>t*</code>).</p>
       <ul style="margin:0;padding-left:18px;font-size:13.5px;color:var(--muted)">
-        <li><strong>Tahap 1 (<code>fitur</code>):</strong> 15 fitur tabular pada <code>t*</code> (12 dasar Proposal + 3 kuesioner).</li>
-        <li><strong>Tahap 2 (<code>pembanding</code>):</strong> Baseline <strong>B0</strong> (0,9698) &amp; <strong>B1 wick ≥ 2/3</strong> (0,9678).</li>
-        <li><strong>Tahap 3 (<code>walk-forward</code>):</strong> 8 konfigurasi pohon × 5 tahun OOF. Terpilih: <code>d2_n100_m50</code> (<strong>0,9233</strong>).</li>
+        <li><strong>Tahap 1 (RM-22):</strong> 15 fitur tabular pada <code>t*</code> (12 dasar Proposal + 3 kuesioner).</li>
+        <li><strong>Tahap 2 (RM-23):</strong> Baseline <strong>B0</strong> (0,9698) &amp; <strong>B1 wick ≥ 2/3</strong> (0,9678).</li>
+        <li><strong>Tahap 3 (RM-24):</strong> 8 konfigurasi pohon × 5 tahun OOF. Terpilih: <code>d2_n100_m50</code> (<strong>0,9233</strong>).</li>
       </ul>
     </div>
     <div class="mini-box" style="border-top:4px solid var(--teal)">
-      <h3>🧠 Jalur Anda: <code>src/model/lstm/</code></h3>
+      <h3>🧠 Jalur LSTM: <code>src/model/lstm/</code> (Lengkap RM-22 s.d. 🔒 Kunci-2)</h3>
       <p style="margin-bottom:10px">Menggunakan <strong>LSTM PyTorch</strong> yang membaca <strong>urutan waktu 3D</strong> (rekaman video <code>L</code> jam terakhir).</p>
       <ul style="margin:0;padding-left:18px;font-size:13.5px;color:var(--muted)">
-        <li><strong>Tahap 1 (<code>fitur</code> v2):</strong> 13 fitur per candle (harga, tren EMA50, rezim ATR120, volume jam-sama, jam &amp; hari siklik) + <code>uji_pemotongan</code> 0 beda.</li>
-        <li><strong>Tahap 2 (<code>pembanding</code>):</strong> B0 &amp; B1 — <strong>SHA-256 100% identik</strong> dengan GB (<code>295010275517ebb1…</code>)!</li>
-        <li><strong>Tahap 3 (<code>walk-forward</code>):</strong> 10 konfigurasi × 5 tahun × 5 seed Kunci-1. Terpilih: <code>L46_h32</code> (<strong>0,9185</strong>).</li>
+        <li><strong>RM-22–24:</strong> 13 fitur per candle (v2), B0/B1 identik SHA-256 dgn GB, terpilih <code>L46_h32</code> (OOF <strong>0,9185</strong>).</li>
+        <li><strong>RM-25–27:</strong> Model akhir 5 seed (<code>1.841</code> event), kalibrasi <strong><code>τ = 1,2375</code></strong> (2024), aturan keputusan <strong><code>m_rev = +0,5627R, δ = 0,1R</code></strong>.</li>
+        <li><strong>🔒 Kunci-2:</strong> 8 berkas beku tersegel SHA-256 di <code>kunci_2/</code> (<em>read-only</em>, data uji tetap tertutup).</li>
       </ul>
     </div>
   </div>
@@ -344,8 +687,8 @@
   </p>
 
   <div class="pill-bar">
-    <button class="pill active" onclick="setLevelMode('PDH', this)">Simulasi PDH (d = +1, Harga Naik ke Atap)</button>
-    <button class="pill" onclick="setLevelMode('PDL', this)">Simulasi PDL (d = −1, Harga Turun ke Lantai)</button>
+    <button type="button" class="pill active" onclick="setLevelMode('PDH', this)">Simulasi PDH (d = +1, Harga Naik ke Atap)</button>
+    <button type="button" class="pill" onclick="setLevelMode('PDL', this)">Simulasi PDL (d = −1, Harga Turun ke Lantai)</button>
   </div>
 
   <div class="sim-panel">
@@ -382,38 +725,18 @@
   </div>
 
   <div class="callout green">
-    <strong>Hasil Audit Kualitas Fitur v2:</strong> Membuang <code>ret_dir</code> (dulu berkorelasi <code>r = 0,99</code> dengan <code>body_dir</code>) dan memakai volume relatif jam-sama menurunkan korelasi volume vs jam dari <code>−0,47 → −0,03</code>. Hasilnya, OOF Log-Loss LSTM langsung membaik tajam dari <strong>0,9271 → 0,9185</strong>!
+    <strong>Hasil Audit Kualitas Fitur v2:</strong> Membuang <code>ret_dir</code> (dulu berkorelasi <code>r = 0,99</code> dengan <code>body_dir</code>) dan memakai volume relatif jam-sama menurunkan korelasi volume vs jam dari <code>−0,47 → −0,03</code>. Hasilnya, OOF Log-Loss LSTM membaik tajam dari <strong>0,9271 → 0,9185</strong>, dan uji pemotongan <code>L = 96</code> di 4 titik waktu menghasilkan <strong>0 mismatch</strong>!
   </div>
 
   <div class="sim-panel">
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
       <strong>Visualisasi Mini 1 Event di Tensor 3D (6 bar terakhir menuju <code>t*</code> × 13 fitur)</strong>
-      <button class="pill" id="scaleToggleBtn" onclick="toggleScale()">Mode: Angka Mentah (Klik untuk lihat hasil SequenceScaler3D)</button>
+      <button type="button" class="pill" id="scaleToggleBtn" onclick="toggleScale()">Mode: Angka Mentah (Klik untuk lihat hasil SequenceScaler3D)</button>
     </div>
     <div style="overflow-x:auto"><div id="tensorBox" style="margin-top:10px"></div></div>
     <p style="margin:10px 0 0;font-size:12.5px;color:var(--muted)">
       Perhatikan 4 kolom bertanda bintang <strong>s09*–s12*</strong> (<code>ny_hour_sin/cos</code> &amp; <code>weekday_sin/cos</code>) dilewati oleh <code>SequenceScaler3D</code> karena sudah rapi di <code>[-1, 1]</code>, sedangkan 9 fitur lain di-z-score hanya memakai statistik <strong>data latih</strong>.
     </p>
-  </div>
-
-  <h3 style="margin:22px 0 8px;font-size:16.5px">Breakdown Tensor 3D <code>(N, L, 13)</code> &amp; Beda "Bentuk Fitur" vs "Train Model"</h3>
-  <div class="grid-2">
-    <div class="mini-box">
-      <h3>📦 Arti 3 Angka di <code>(N, L, 13)</code></h3>
-      <ul style="margin:6px 0 0;padding-left:18px;font-size:13.5px;color:var(--muted)">
-        <li><strong><code>N</code> (Jumlah lembar event):</strong> <code>1.841</code> di <code>dev</code> (2016–2023), <code>689</code> di latih Fold 1 (2016–2018), <code>227</code> di val 2019 &amp; <code>calib</code> 2024. <em>(2015 = 0 lembar, hanya gudang candle riwayat.)</em></li>
-        <li><strong><code>L</code> (Baris jam ke belakang):</strong> karena di awal belum tahu panjang terbaik, kelima kandidat <code>L ∈ {23, 40, 46, 60, 96}</code> <strong>dicoba satu per satu</strong> di Walk-Forward (menang: <strong><code>L = 46</code></strong> = 2 sesi penuh).</li>
-        <li><strong><code>13</code> (Kolom fitur per jam):</strong> <code>s01..s13</code>. Jadi 1 lembar event berukuran <code>46 × 13 = 598 angka</code>.</li>
-      </ul>
-    </div>
-    <div class="mini-box">
-      <h3>⚙️ Beda "Bentuk Fitur" vs "Scaling &amp; Train"</h3>
-      <ul style="margin:6px 0 0;padding-left:18px;font-size:13.5px;color:var(--muted)">
-        <li><strong>1. Bentuk Fitur (1× di awal untuk 1.841 event):</strong> murni rumus matematika per event (belum ada LSTM/belajar). Aman dihitung sekaligus karena tiap event hanya melihat candle miliknya ke belakang (<code>≤ t*</code>).</li>
-        <li><strong>2. Scaling (ulang di tiap Fold):</strong> <code>SequenceScaler3D</code> wajib di-<code>fit</code> ulang hanya pada 85% data latih fold itu agar statistik tahun depan tidak bocor.</li>
-        <li><strong>3. Train Model (ulang di tiap Fold, per <code>batch = 64</code>):</strong> LSTM belajar memperbaiki bobot dari 64 lembar demi 64 lembar.</li>
-      </ul>
-    </div>
   </div>
 </section>
 
@@ -426,9 +749,9 @@
   </p>
 
   <div class="pill-bar">
-    <button class="pill active" onclick="highlightGate(0, this)">1. Forget Gate (Gerbang Lupa)</button>
-    <button class="pill" onclick="highlightGate(1, this)">2. Input Gate (Gerbang Simpan)</button>
-    <button class="pill" onclick="highlightGate(2, this)">3. Output Gate (Gerbang Kesimpulan)</button>
+    <button type="button" class="pill active" onclick="highlightGate(0, this)">1. Forget Gate (Gerbang Lupa)</button>
+    <button type="button" class="pill" onclick="highlightGate(1, this)">2. Input Gate (Gerbang Simpan)</button>
+    <button type="button" class="pill" onclick="highlightGate(2, this)">3. Output Gate (Gerbang Kesimpulan)</button>
   </div>
   <div class="gate-grid" id="gateGrid">
     <div class="gate-card active">
@@ -454,7 +777,7 @@
     </div>
     <div class="mini-box">
       <h3>🛑 2. Early Stopping (85% / 15%)</h3>
-      <p>Data latih dibelah kronologis: <strong>85% awal</strong> untuk update bobot, <strong>15% ujung</strong> untuk cek Log-Loss tiap epoch (<em>patience</em> = 12). Untuk <code>L46_h32</code>, bobot terbaik ketemu di rata-rata <strong>epoch 14,6</strong> tanpa pernah mengintip tahun ujian.</p>
+      <p>Data latih dibelah kronologis: <strong>85% awal</strong> untuk update bobot, <strong>15% ujung</strong> untuk cek Log-Loss tiap epoch (<em>patience</em> = 12). Bobot dikembalikan ke epoch terbaik tanpa pernah mengintip tahun ujian.</p>
     </div>
     <div class="mini-box">
       <h3>🌱 3. Ensemble 5 Seed Kunci-1</h3>
@@ -462,38 +785,13 @@
     </div>
   </div>
 
-  <h3 style="margin:22px 0 8px;font-size:16.5px">🧪 Studi Kasus Mini PyTorch (Bisa Dihitung di Kepala!) &amp; Alur 85% vs 15%</h3>
-  <p style="margin:0 0 10px;font-size:14px;color:var(--muted)">
-    Mesin inti LSTM memakai library jadi <strong>PyTorch</strong> (<code>nn.LSTM</code>, <code>nn.Dropout</code>, <code>nn.Linear</code>, <code>CrossEntropyLoss</code>, <code>AdamW</code>). Agar langsung paham alurnya, bayangkan versi mini: <strong>1 event PDH</strong>, <strong><code>L = 2</code> jam</strong>, <strong>2 fitur</strong> (<code>f1</code> = badan dorong, <code>f2</code> = ekor penolakan), <strong><code>hidden = 2</code></strong> (<code>h1</code> = ingatan dorong, <code>h2</code> = ingatan tolak), label asli = <strong>Reversal</strong>:
-  </p>
-  <div class="mini-calc">
-<span class="hl">1. Input (1 × 2 × 2):</span>   Jam 1 = [f1=+2, f2=0] (naik kuat)  →  Jam 2 (t*) = [f1=−1, f2=+3] (ditolak keras!)
+  <h3 style="margin:22px 0 8px;font-size:16.5px">🧪 Studi Kasus Mini PyTorch (Bisa Dihitung di Kepala!)</h3>
+  <div class="mini-calc"><span class="hl">1. Input (1 × 2 × 2):</span>   Jam 1 = [f1=+2, f2=0] (naik kuat)  →  Jam 2 (t*) = [f1=−1, f2=+3] (ditolak keras!)
 <span class="hl">2. nn.LSTM baca 2 jam:</span>  Awal [0,0] → Jam 1 [+2, 0] → Jam 2: Forget 50% (+2×0,5 − 1 = 0), Input tolak (+3) → <span class="warn">h_T = [0, +3]</span>
 <span class="hl">3. nn.Dropout(0,3):</span>     Saat evaluasi tidak ada yang dimatikan → tetap [0, +3]
 <span class="hl">4. nn.Linear(2 → 3):</span>    Rev = (−1·0 + 1·3) = <span class="warn">+3</span> | Cont = (1·0 − 1·3) = −3 | Net = 0  →  <span class="warn">Logits = [+3, −3, 0]</span>
 <span class="hl">5. Softmax (Σ = 100%):</span>  e³≈20, e⁻³≈0,05, e⁰=1 (total≈21)  →  <span class="warn">Rev 95% · Cont 0,2% · Net 4,8%</span>
-<span class="hl">6. Belajar (85% saja!):</span> Jika salah (misal tebak Rev cuma 10%), Loss = −ln(0,10) = 2,30 → <span class="warn">loss.backward() + AdamW</span> naikkan bobot!
-  </div>
-
-  <div class="grid-2" style="margin-top:14px">
-    <div class="mini-box" style="border-top:4px solid var(--amber)">
-      <h3>🔁 Alur Epoch: 85% Latih vs 15% Early Stopping</h3>
-      <ul style="margin:6px 0 0;padding-left:18px;font-size:13.5px;color:var(--muted)">
-        <li><strong>Output latih (85%) rupanya apa?</strong> Bukan CSV prediksi, melainkan <strong>ribuan bobot terlatih (<code>state_dict</code> / file <code>.pt</code>)</strong> + <code>scaler</code>.</li>
-        <li><strong>85% awal data latih:</strong> tempat bobot <strong>diubah</strong> (<code>backward()</code> + <code>AdamW</code>).</li>
-        <li><strong>15% akhir data latih:</strong> pengawas tanpa ubah bobot (<em>bukan 2024 dan bukan tahun ujian OOF!</em>).</li>
-        <li><strong>Siklus (maks 80 epoch, <code>patience = 12</code>):</strong> belajar 1 putaran 85% → cek 15% → rekor baru? simpan bobot &amp; lanjut → 12× berturut-turut tidak membaik? <strong>STOP</strong> &amp; kembalikan bobot terbaik (~Epoch 14,6).</li>
-      </ul>
-    </div>
-    <div class="mini-box" style="border-top:4px solid var(--teal)">
-      <h3>🌱 Kenapa 5 Seed (<code>20261119..20261123</code>), Bukan 1 Seed?</h3>
-      <ul style="margin:6px 0 0;padding-left:18px;font-size:13.5px;color:var(--muted)">
-        <li><strong>Tidak masuk ke rumus:</strong> angka <code>20261119</code> tidak dikali/dibagi ke fitur/ATR — hanya kode pengunci 3 keacakan (bobot awal, <em>shuffle</em> batch 64, pola <em>dropout</em>).</li>
-        <li><strong>Dijalankan otomatis 5×:</strong> 10 konfigurasi × 5 fold × 5 seed = <strong>250× latih otomatis</strong>, lalu 5 logits dirata-ratakan sebelum <code>Softmax</code>.</li>
-        <li><strong>Kenapa bukan 1 seed?</strong> Selisih Peringkat #1 (<code>0,9185</code>) vs #2 (<code>0,9186</code>) hanya <code>0,0001</code>, jauh lebih kecil dari variasi acak 1 seed! Dengan 5 seed, faktor hoki/apes saling meniadakan dan hasil tahan kritik penguji.</li>
-      </ul>
-    </div>
-  </div>
+<span class="hl">6. Belajar (85% saja!):</span> Jika salah (misal tebak Rev cuma 10%), Loss = −ln(0,10) = 2,30 → <span class="warn">loss.backward() + AdamW</span> naikkan bobot!</div>
 </section>
 
 <!-- SECTION 5 -->
@@ -536,7 +834,7 @@
 
 <!-- SECTION 6 -->
 <section class="card" id="hasil">
-  <span class="sec-tag">Bagian 6 · Hasil Eksperimen Riil v2 (25 Nov 2026)</span>
+  <span class="sec-tag">Bagian 6 · Hasil RM-24 (Walk-Forward)</span>
   <h2>Hasil Walk-Forward LSTM v2 (13 Fitur) vs Baseline B0/B1 &amp; LightGBM</h2>
   <p class="intro">
     Seluruh 10 konfigurasi LSTM v2 dievaluasi pada <strong>1.152 event OOF (2019–2023)</strong> memakai data v1.1.0 dan 5 seed Kunci-1 (<code>20261119..20261123</code>).
@@ -574,9 +872,9 @@
 
   <h3 style="margin:22px 0 8px;font-size:16.5px">Tabel Interaktif 10 Konfigurasi Grid Search LSTM v2 (Semua 10/10 &lt; 0,9233!)</h3>
   <div class="pill-bar">
-    <button class="pill active" onclick="renderGrid('all', this)">Semua (10)</button>
-    <button class="pill" onclick="renderGrid(32, this)">Hanya hidden = 32 (5)</button>
-    <button class="pill" onclick="renderGrid(16, this)">Hanya hidden = 16 (5)</button>
+    <button type="button" class="pill active" onclick="renderGrid('all', this)">Semua (10)</button>
+    <button type="button" class="pill" onclick="renderGrid(32, this)">Hanya hidden = 32 (5)</button>
+    <button type="button" class="pill" onclick="renderGrid(16, this)">Hanya hidden = 16 (5)</button>
   </div>
   <div class="table-wrap">
     <table>
@@ -592,64 +890,516 @@
   </div>
 </section>
 
-<!-- SECTION 7 -->
+<!-- ====================================================================== -->
+<!-- SECTION 7 : RM-25 MODEL AKHIR                                          -->
+<!-- ====================================================================== -->
+<section class="card stage-highlight" id="rm25">
+  <span class="sec-tag">Bagian 7 · Tahap 4 (RM-25)</span>
+  <h2>RM-25: Model Akhir — Latih <code>L46_h32</code> pada Seluruh <code>dev</code> (2016–2023)</h2>
+  <p class="intro">
+    Setelah <strong>RM-24</strong> memutuskan pemenang tunggal (<code>L46_h32</code>), kita <strong>tidak lagi memakai Walk-Forward</strong>. Sekarang hanya sang pemenang yang dilatih penuh satu kali pada seluruh 8 tahun data pengembangan (<code>dev</code> 2016–2023 = <strong>1.841 event</strong>) × <strong>5 seed</strong>, lalu bobotnya disimpan permanen ke disk.
+  </p>
+
+  <div class="stage-ribbon" aria-label="Posisi alur RM-25">
+    <span class="stage-chip done">RM-24: Pilih L46_h32</span>
+    <span class="stage-arrow">→</span>
+    <span class="stage-chip active">RM-25: Latih Penuh dev (1.841 event)</span>
+    <span class="stage-arrow">→</span>
+    <span class="stage-chip">RM-26: Kalibrasi τ (2024)</span>
+    <span class="stage-arrow">→</span>
+    <span class="stage-chip">RM-27: Keputusan R</span>
+    <span class="stage-arrow">→</span>
+    <span class="stage-chip lock">🔒 Kunci-2</span>
+  </div>
+
+  <div class="callout">
+    <strong>Analogi Pemula — Kenapa RM-24 (Walk-Forward) Dipisah dari RM-25 (Model Akhir)?</strong><br>
+    Bayangkan <strong>RM-24</strong> seperti 5 kali <em>try out</em> untuk mencari resep belajar terbaik di antara 10 kandidat (ketemu resep terbaik: baca <code>46</code> jam terakhir dengan <code>32</code> neuron). Begitu resepnya sudah pasti, <strong>RM-25</strong> langsung belajar penuh memakai <strong>seluruh buku latihan 2016–2023 (1.841 soal)</strong> agar model memiliki pengetahuan paling lengkap sebelum masuk ke kalibrasi 2024.
+  </div>
+
+  <h3 style="margin:18px 0 8px;font-size:16.5px">Alur 4 Langkah di <code>src/model/lstm/model_akhir.py</code></h3>
+  <div class="flow-row">
+    <div class="step-box">
+      <div class="step-num">Langkah 1 · Cek RM-24</div>
+      <h4>Kunci Pemenang &amp; Purging</h4>
+      <p>Memverifikasi kesegaran <code>walk_forward_rekonsiliasi.json</code> → membaca pemenang <code>L46_h32</code>. Terapkan <em>purging</em> batas <code>2024-01-01</code>: <strong>1.841 event lolos</strong>, <strong>0 di-purge</strong>.</p>
+    </div>
+    <div class="step-box teal">
+      <div class="step-num">Langkah 2 · Split 85% / 15%</div>
+      <h4>Belajar &amp; Rem Anti-Hafalan</h4>
+      <p>Dibelah kronologis: <strong>1.565 event awal</strong> (<code>2016-01-04..2022-10-13</code>) untuk update bobot + <code>fit</code> scaler, dan <strong>276 event ujung</strong> (<code>2022-10-13..2023-12-29</code>) untuk <em>early stopping</em> (<code>patience = 12</code>).</p>
+    </div>
+    <div class="step-box amber">
+      <div class="step-num">Langkah 3 · 5 Seed Kunci-1</div>
+      <h4>Simpan 5 <code>.pt</code> + 1 Scaler</h4>
+      <p>Dilatih 5 kali (seed <code>20261119..20261123</code>). Disimpan ke <code>checkpoints/</code> sebagai <strong>5 file bobot CPU <code>.pt</code></strong> + <strong>1 file <code>scaler_L46_h32.json</code></strong> (statistik 5 seed terverifikasi 100% identik).</p>
+    </div>
+    <div class="step-box green">
+      <div class="step-num">Langkah 4 · Audit Reload</div>
+      <h4>Uji Round-Trip 0,00e+00</h4>
+      <p>Kelima <code>.pt</code> + scaler langsung dimuat ulang dari disk dan dibandingkan dengan model di memori pada 32 event: selisih maksimum logits = <strong><code>0,00e+00</code></strong> (identik eksak!).</p>
+    </div>
+  </div>
+
+  <div class="grid-2" style="margin-top:16px">
+    <div class="mini-box">
+      <h3>📦 Hasil Riil 5 Seed Model Akhir (<code>L46_h32</code>, <code>dev</code> 2016–2023)</h3>
+      <div class="table-wrap" style="margin:8px 0 0">
+        <table>
+          <thead>
+            <tr><th>Seed</th><th class="num">Best Epoch</th><th class="num">ES Log-Loss</th><th class="num">Ukuran</th><th>SHA-256 (16 hex)</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>20261119</code></td><td class="num">25</td><td class="num">0,9074</td><td class="num">27.629 B</td><td><code>5e27478581f5dfc9…</code></td></tr>
+            <tr><td><code>20261120</code></td><td class="num">17</td><td class="num">0,9040</td><td class="num">27.629 B</td><td><code>d1eb171cd2119ad6…</code></td></tr>
+            <tr><td><code>20261121</code></td><td class="num">19</td><td class="num">0,9040</td><td class="num">27.629 B</td><td><code>4b9706ec90fc233d…</code></td></tr>
+            <tr class="win"><td><code>20261122</code></td><td class="num">29</td><td class="num"><strong>0,8840</strong></td><td class="num">27.629 B</td><td><code>de0163d458af6040…</code></td></tr>
+            <tr><td><code>20261123</code></td><td class="num">34</td><td class="num">0,8880</td><td class="num">27.629 B</td><td><code>9dedac45356408e4…</code></td></tr>
+            <tr class="win"><td><strong>Rata-rata</strong></td><td class="num"><strong>24,8</strong></td><td class="num"><strong>0,8975</strong></td><td class="num">5× .pt</td><td>Round-trip: <strong>0,00e+00</strong></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="margin-top:8px;font-size:12.5px;color:var(--muted)">
+        Data <code>calib</code> (2024) dan <code>kunci_uji</code> (2025–2026) <strong>sama sekali tidak dibaca</strong> pada RM-25.
+      </p>
+    </div>
+
+    <div class="mini-box">
+      <h3>📏 Ringkasan <code>scaler_L46_h32.json</code> (Fit Hanya pada 1.565 Event Awal)</h3>
+      <div class="table-wrap" style="margin:8px 0 0">
+        <table>
+          <thead>
+            <tr><th>Kode</th><th>Fitur</th><th>Mode</th><th class="num">Mean</th><th class="num">Std</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>s01</code></td><td><code>dist_level_dir</code></td><td>z-score ±10</td><td class="num">−2,5167</td><td class="num">2,1321</td></tr>
+            <tr><td><code>s02</code></td><td><code>body_dir</code></td><td>z-score ±10</td><td class="num">+0,0672</td><td class="num">0,6874</td></tr>
+            <tr><td><code>s03</code></td><td><code>range_atr</code></td><td>z-score ±10</td><td class="num">+0,9972</td><td class="num">0,6470</td></tr>
+            <tr><td><code>s04</code></td><td><code>wick_against_dir</code></td><td>z-score ±10</td><td class="num">+0,2665</td><td class="num">0,2622</td></tr>
+            <tr><td><code>s05</code></td><td><code>wick_with_dir</code></td><td>z-score ±10</td><td class="num">+0,2554</td><td class="num">0,2565</td></tr>
+            <tr><td><code>s06</code></td><td><code>dist_ema50_dir</code></td><td>z-score ±10</td><td class="num">+0,3504</td><td class="num">2,2324</td></tr>
+            <tr><td><code>s07</code></td><td><code>vol_regime</code></td><td>z-score ±10</td><td class="num">+0,9888</td><td class="num">0,2020</td></tr>
+            <tr><td><code>s08</code></td><td><code>log_vol_rel_hour</code></td><td>z-score ±10</td><td class="num">−0,0143</td><td class="num">0,1628</td></tr>
+            <tr class="new-feat"><td><code>s09–12</code></td><td><code>ny_hour / weekday sin,cos</code></td><td><strong>Skip siklik</strong></td><td class="num">0,0000</td><td class="num">1,0000</td></tr>
+            <tr><td><code>s13</code></td><td><code>log_gap_h</code></td><td>z-score ±10</td><td class="num">+0,7376</td><td class="num">0,3177</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="margin-top:8px;font-size:12.5px;color:var(--muted)">
+        Ukuran: <code>967 byte</code> · SHA-256: <code>977e6b03528135a8…</code> · Berlaku identik bagi seluruh 5 checkpoint.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ====================================================================== -->
+<!-- SECTION 8 : RM-26 KALIBRASI TEMPERATURE SCALING                        -->
+<!-- ====================================================================== -->
+<section class="card stage-violet" id="rm26">
+  <span class="sec-tag violet">Bagian 8 · Tahap 5 (RM-26)</span>
+  <h2>RM-26: Kalibrasi <code>τ</code> — <em>Temperature Scaling</em> di <code>calib</code> 2024 (227 Event)</h2>
+  <p class="intro">
+    Model neural network sering akurat mengurutkan kelas, tetapi <strong>terlalu percaya diri (<em>overconfident</em>)</strong> dalam angka peluangnya. Di RM-26, kita memuat 5 checkpoint RM-25 dalam mode beku (<code>eval()</code>, <strong>tanpa melatih ulang bobot</strong>) dan mencari <strong>tepat 1 angka skalar suhu <code>τ</code></strong> pada data 2024 agar probabilitasnya terkalibrasi jujur: <code>p_cal = Softmax(mean_logits / τ)</code>.
+  </p>
+
+  <div class="stage-ribbon" aria-label="Posisi alur RM-26">
+    <span class="stage-chip done">RM-25: 5 .pt + scaler</span>
+    <span class="stage-arrow">→</span>
+    <span class="stage-chip active" style="background:var(--violet);border-color:var(--violet)">RM-26: Cari τ pada calib 2024 (227 event)</span>
+    <span class="stage-arrow">→</span>
+    <span class="stage-chip">RM-27: Keputusan R</span>
+    <span class="stage-arrow">→</span>
+    <span class="stage-chip lock">🔒 Kunci-2</span>
+  </div>
+
+  <div class="callout violet">
+    <strong>Analogi Pemula — Termometer Kepercayaan Diri (<code>τ</code>):</strong><br>
+    Bayangkan model berkata <em>"72% pasti Continuation!"</em>, padahal kenyataannya di lapangan hanya benar 50% (terlalu pede!). Membagi <em>logits</em> dengan suhu <strong><code>τ &gt; 1</code></strong> (di kita ketemu <strong><code>τ = 1,2375</code></strong>) akan <strong>"mendinginkan"</strong> tebakan ekstrem itu menjadi ~64% agar jujur sesuai fakta — <strong>tanpa pernah mengubah kelas mana yang nomor #1 (ranking tetap 100% sama)</strong> dan <strong>tanpa mengubah 1 pun bobot LSTM</strong>! Sebaliknya, bila <code>τ &lt; 1</code>, peluang ditajamkan; bila <code>τ = 1</code>, tidak berubah.
+  </div>
+
+  <h3 style="margin:18px 0 8px;font-size:16.5px">Alur 4 Langkah di <code>src/model/lstm/kalibrasi.py</code></h3>
+  <div class="flow-row">
+    <div class="step-box">
+      <div class="step-num">Langkah 1 · Audit RM-25</div>
+      <h4>Muat 5 <code>.pt</code> Mode <code>eval()</code></h4>
+      <p>Cocokkan SHA-256 ke-5 checkpoint + scaler terhadap RM-25. Jalankan inferensi murni pada <strong>227 event <code>calib</code> 2024</strong> (tanpa <code>backward()</code>/update bobot).</p>
+    </div>
+    <div class="step-box violet">
+      <div class="step-num">Langkah 2 · Rata-Rata Logits</div>
+      <h4>Hitung <code>mean_logits</code></h4>
+      <p>Untuk tiap event 2024, ambil rata-rata 3 skor mentah dari 5 seed: <code>z = [z_rev, z_cont, z_net]</code>. Ini bahan baku sebelum <code>Softmax</code>.</p>
+    </div>
+    <div class="step-box teal">
+      <div class="step-num">Langkah 3 · Golden-Section</div>
+      <h4>Cari <code>τ ∈ [0,05; 20,0]</code></h4>
+      <p>Sesuai Kunci-1 (<code>RENCANA_ANALISIS_RQ2.md</code> §5), cari <code>τ</code> peminimal Log-Loss 2024 via <em>golden-section search</em> (<code>56</code> iterasi) → <strong><code>τ* = 1,237549</code></strong>.</p>
+    </div>
+    <div class="step-box green">
+      <div class="step-num">Langkah 4 · Reliabilitas</div>
+      <h4>Bandingkan Raw vs Cal + B0/B1</h4>
+      <p>Evaluasi Log-Loss, Brier, ECE top-conf, ECE per-kelas (10 bin selebar 0,1), dan simpan <code>calib_pred_lstm.csv</code> untuk RM-27.</p>
+    </div>
+  </div>
+
+  <h3 style="margin:18px 0 8px;font-size:16.5px">🧪 Studi Kasus Nyata 2024: Event <code>2024-10-01_PDH</code> Sebelum vs Sesudah <code>τ = 1,2375</code></h3>
+  <div class="mini-calc"><span class="hl">Event nyata:</span> 2024-10-01_PDH (Label asli di pasar: Reversal)
+<span class="hl">Mean Logits 5 seed:</span>       z = [Rev: −0,6284,  Cont: +0,9155,  Net: −0,7304]
+<span class="warn">Sebelum Kalibrasi (τ=1):</span>  Softmax(z / 1,0000) → Rev 15,18% · <span class="bad">Cont 71,11% (terlalu pede!)</span> · Net 13,71%
+<span class="ok">Sesudah Kalibrasi (τ*):</span>   Softmax(z / 1,2375) → Rev 18,51% · <span class="ok">Cont 64,45% (lebih jujur!)</span>  · Net 17,04%
+<span class="hl">Dampak ke Log-Loss:</span>       −ln(0,1518) = 1,8852  →  −ln(0,1851) = <span class="ok">1,6869 (hukuman turun −0,1983!)</span></div>
+
+  <div class="sim-panel">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      <h3 style="margin:0;font-size:16px">🌡️ Simulator Interaktif Temperature Scaling (Event Nyata <code>2024-10-01_PDH</code>)</h3>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button type="button" class="pill" onclick="setTauPreset(1.0)">Reset Raw (τ = 1,00)</button>
+        <button type="button" class="pill active" onclick="setTauPreset(1.2375)">Optimal 2024 (τ = 1,24)</button>
+        <button type="button" class="pill" onclick="setTauPreset(2.0)">Sangat Dingin (τ = 2,00)</button>
+      </div>
+    </div>
+    <p style="margin:6px 0 10px;font-size:13.2px;color:var(--muted)">
+      Geser suhu <code>τ</code> dari <code>0,50</code> (tajam/pede) ke <code>2,50</code> (dingin/hati-hati) pada logits riil <code>[−0,6284; +0,9155; −0,7304]</code> dan perhatikan bagaimana peluang berubah sementara peringkat #1 tetap sama:
+    </p>
+    <div class="slider-row">
+      <label for="tauSlider">Suhu kalibrasi <code>τ</code>:</label>
+      <input type="range" id="tauSlider" min="50" max="250" value="124" oninput="updateTauSim()">
+      <span class="val" id="tauValTxt">1,24</span>
+    </div>
+    <div id="tauBars"></div>
+    <div id="tauNote" style="margin-top:8px;font-size:13.5px;color:var(--muted)"></div>
+  </div>
+
+  <div class="grid-2" style="margin-top:18px;align-items:start">
+    <div class="mini-box">
+      <h3>📊 Hasil Riil <code>calib</code> 2024 (<code>n = 227</code>, Deskriptif)</h3>
+      <div class="table-wrap" style="margin:8px 0 0">
+        <table>
+          <thead>
+            <tr><th>Model / Tahap</th><th class="num">Log-Loss</th><th class="num">Brier</th><th class="num">ECE (Top)</th><th class="num">ECE Rev</th><th class="num">ECE Cont</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>LSTM Raw (<code>τ = 1,00</code>)</td><td class="num">0,9655</td><td class="num">0,5849</td><td class="num">0,1013</td><td class="num">0,0407</td><td class="num">0,1041</td></tr>
+            <tr class="win"><td><strong>LSTM Cal (<code>τ = 1,2375</code>) ★</strong></td><td class="num"><strong>0,9597</strong></td><td class="num"><strong>0,5812</strong></td><td class="num"><strong>0,0676</strong></td><td class="num"><strong>0,0228</strong></td><td class="num"><strong>0,0621</strong></td></tr>
+            <tr><td>B0 akhir (<code>dev</code>, tanpa τ)</td><td class="num">0,9967</td><td class="num">0,5948</td><td class="num">0,0153</td><td class="num">0,0482</td><td class="num">0,0153</td></tr>
+            <tr><td>B1 akhir (<code>dev</code>, tanpa τ)</td><td class="num">1,0013</td><td class="num">0,5985</td><td class="num">0,0496</td><td class="num">0,0481</td><td class="num">0,0496</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <ul style="margin:10px 0 0;padding-left:18px;font-size:13px;color:var(--muted)">
+        <li><strong>Log-Loss 2024 membaik:</strong> <code>0,9655 → 0,9597</code> (<code>−0,0058</code>), unggul <strong><code>−0,0370</code></strong> vs B0 dan <strong><code>−0,0416</code></strong> vs B1.</li>
+        <li><strong>ECE (kesalahan kalibrasi) anjlok 33%:</strong> <code>0,1013 → 0,0676</code> (ECE Reversal turun tajam <code>0,0407 → 0,0228</code>!).</li>
+        <li><strong>Per level 2024:</strong> LL PDH (<code>n=129</code>) = <code>0,9305</code>; LL PDL (<code>n=98</code>) = <code>0,9981</code> (turun dari <code>1,0106</code>).</li>
+      </ul>
+    </div>
+
+    <div class="mini-box">
+      <h3>📈 Diagram Reliabilitas 2024: Sebelum vs Sesudah <code>τ</code> (10-Bin Riil)</h3>
+      <svg id="relSvg" viewBox="0 0 380 235" width="100%" style="background:#fff;border:1px solid var(--line);border-radius:10px;margin-top:8px"></svg>
+      <p style="margin-top:8px;font-size:12.5px;color:var(--muted)">
+        Garis putus-putus = <strong>kalibrasi sempurna (<code>y = x</code>)</strong>. Pada model mentah (merah), bin <code>[0,7–0,8]</code> (<code>n=20</code>) terlalu pede (prediksi 71,9%, kenyataan hanya 50,0%). Sesudah <code>τ = 1,2375</code> (hijau toska), bin ekstrem itu melunak mendekati garis diagonal!
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ====================================================================== -->
+<!-- SECTION 9 : RM-27 ATURAN KEPUTUSAN & REALIZED_R                        -->
+<!-- ====================================================================== -->
+<section class="card stage-amber" id="rm27">
+  <span class="sec-tag amber">Bagian 9 · Tahap 6 (RM-27)</span>
+  <h2>RM-27: Aturan Keputusan — Peluang Terkalibrasi → Reversal / Continuation / Abstain &amp; <code>realized_R</code></h2>
+  <p class="intro">
+    Setelah memiliki probabilitas yang jujur dari RM-26 (<code>p_rev, p_cont, p_net</code>), sistem pendukung keputusan (DSS) harus menjawab pertanyaan praktis: <strong>"Ambil Reversal, ambil Continuation, atau lebih baik Abstain (tidak bertransaksi)?"</strong> Jawabannya bukan sekadar memilih peluang terbesar, melainkan menghitung <strong>Nilai Harapan (<em>Expected Value</em>) dalam satuan R</strong>.
+  </p>
+
+  <div class="stage-ribbon" aria-label="Posisi alur RM-27">
+    <span class="stage-chip done">RM-26: p_cal (τ = 1,2375)</span>
+    <span class="stage-arrow">→</span>
+    <span class="stage-chip active" style="background:var(--amber);border-color:var(--amber)">RM-27: Hitung E_rev, E_cont &amp; realized_R</span>
+    <span class="stage-arrow">→</span>
+    <span class="stage-chip lock">🔒 Kunci-2</span>
+  </div>
+
+  <div class="callout amber">
+    <strong>Kenapa Tidak Cukup Memilih Kelas dengan Peluang Terbesar? (Asimetri Risiko–Imbal Hasil!)</strong><br>
+    Dengan label Kunci-1 (<code>a = 2, b = 1</code>):
+    <ul style="margin:6px 0 0;padding-left:18px">
+      <li>Posisi <strong>Reversal</strong>: menang dapat <strong><code>+2,0R</code></strong>, kalah rugi <strong><code>−1,0R</code></strong>, Netral rata-rata di <code>dev</code> dapat <strong><code>m_rev = +0,5627R</code></strong> (dari 385 event Netral <code>dev</code>).</li>
+      <li>Posisi <strong>Continuation</strong>: menang hanya dapat <strong><code>+0,5R</code></strong> (<code>b/a</code>), kalah rugi <strong><code>−1,0R</code></strong>, Netral rata-rata di <code>dev</code> dapat <strong><code>m_cont = −0,2813R = −0,5·m_rev</code></strong>.</li>
+    </ul>
+    Karena menang Reversal dibayar <code>4×</code> lebih besar daripada menang Continuation, <strong>peluang 45% Reversal bisa sangat positif (<code>+0,48R</code>), sedangkan peluang 61% Continuation masih impas (<code>0R</code>)</strong>!
+  </div>
+
+  <h3 style="margin:18px 0 6px;font-size:16.5px">Rumus Nilai Harapan &amp; 3 Zona Keputusan (<code>δ = 0,1R</code>)</h3>
+  <div class="mini-calc"><span class="hl">Nilai Harapan Reversal:</span>      E_rev  = (+2)·p_rev + (−1)·p_cont + (+0,5627)·p_net
+<span class="hl">Nilai Harapan Continuation:</span>  E_cont = (−1)·p_rev + (+0,5)·p_cont + (−0,2813)·p_net  <span class="warn">= −0,5 · E_rev</span>
+
+<span class="hl">Aturan Ambang Utama (δ = 0,1R):</span>
+  • <span class="ok">E_rev ≥ +0,10R</span>                 →  <strong>Reversal</strong>      →  realized_R = R_rev  (+2,0R / −1,0R / R_netral)
+  • <span class="warn">−0,20R &lt; E_rev &lt; +0,10R</span>        →  <strong>Abstain</strong>       →  realized_R = 0,0R   (tidak masuk pasar)
+  • <span class="hl">E_rev ≤ −0,20R (E_cont ≥ +0,1)</span> →  <strong>Continuation</strong>  →  realized_R = R_cont (+0,5R / −1,0R / R_netral)</div>
+
+  <div class="mini-box" style="margin-top:12px">
+    <h3 style="margin-bottom:4px">🗺️ Peta Visual 3 Zona pada Garis Bilangan <code>E_rev</code> (dan Posisi Data 2024)</h3>
+    <div class="zone-bar" aria-label="Peta zona keputusan E_rev">
+      <div class="zone-cont">Continuation (E_rev ≤ −0,20R)</div>
+      <div class="zone-abs">Abstain (0R) · Zona Ragu</div>
+      <div class="zone-rev">Reversal (E_rev ≥ +0,10R)</div>
+    </div>
+    <div class="zone-ticks">
+      <span>−0,50R</span>
+      <span><strong>Batas Cont: −0,20R</strong></span>
+      <span>0,00R</span>
+      <span><strong>Batas Rev: +0,10R</strong></span>
+      <span>+0,50R</span>
+    </div>
+    <p style="margin:8px 0 0;font-size:13px;color:var(--muted)">
+      <strong>Temuan penting 2024:</strong> Pada 227 event <code>calib</code> 2024 (sesudah <code>τ = 1,2375</code>), nilai <code>E_rev</code> berkisar antara <strong><code>−0,1784R</code> s.d. <code>+0,4839R</code></strong> (median <code>+0,0889R</code>). Karena nilai terendah <code>−0,1784R</code> tidak menembus batas <code>−0,20R</code> (<code>E_cont</code> tertinggi hanya <code>+0,0892R &lt; +0,10R</code>), maka <strong>tidak ada rekomendasi Continuation di 2024 (<code>Cont = 0</code>)</strong> — dan ternyata 18 sinyal Continuation pada model mentah sebelum kalibrasi justru merugi <code>−2,86R</code>!
+    </p>
+  </div>
+
+  <h3 style="margin:18px 0 8px;font-size:16.5px">🧪 3 Contoh Hitung Tangan dari Event Nyata <code>calib</code> 2024</h3>
+  <div class="mini-calc"><span class="ok">1. REVERSAL (2024-01-05_PDL · Label asli: Reversal)</span>
+   p_cal = [Rev 44,59%, Cont 46,05%, Net 9,36%]  ← perhatikan p_cont SEDIKIT lebih besar dari p_rev!
+   E_rev = 2(0,4459) − 0,4605 + 0,5627(0,0936) = <span class="ok">+0,4839R ≥ +0,10R</span>  |  E_cont = −0,2419R
+   Keputusan: <span class="ok">REVERSAL</span>  →  Hasil nyata di pasar: <span class="ok">realized_R = +2,0000R!</span>
+
+<span class="warn">2. ABSTAIN (2024-02-13_PDL · Label asli: Continuation)</span>
+   p_cal = [Rev 27,74%, Cont 61,50%, Net 10,76%]
+   E_rev = 2(0,2774) − 0,6150 + 0,5627(0,1076) = <span class="warn">+0,0004R</span> (di antara −0,20R &amp; +0,10R)  |  E_cont = −0,0002R
+   Keputusan: <span class="warn">ABSTAIN</span>   →  Tidak masuk pasar: <span class="warn">realized_R = 0,0000R</span>
+
+<span class="hl">3. ABSTAIN YANG MENYELAMATKAN (2024-10-01_PDH · Label asli: Reversal)</span>
+   p_cal = [Rev 18,51%, Cont 64,45%, Net 17,04%]  (di model mentah: p_cont 71,11% sempat memicu Continuation &amp; rugi −1R!)
+   E_rev = 2(0,1851) − 0,6445 + 0,5627(0,1704) = <span class="hl">−0,1784R</span>  |  E_cont = +0,0892R &lt; +0,10R
+   Keputusan: <span class="ok">ABSTAIN</span>   →  Selamat dari rugi −1,0R: <span class="ok">realized_R = 0,0000R!</span></div>
+
+  <div class="sim-panel">
+    <h3 style="margin:0 0 6px;font-size:16px">🎛️ Simulator Interaktif Aturan Keputusan RM-27</h3>
+    <p style="margin:0 0 10px;font-size:13.2px;color:var(--muted)">
+      Uji sendiri bagaimana probabilitas terkalibrasi <code>(p_rev, p_cont, p_net)</code> dan ambang <code>δ</code> diubah menjadi rekomendasi <strong>Reversal / Continuation / Abstain</strong> (dengan <code>m_rev = +0,5627R</code>):
+    </p>
+    <div class="pill-bar" style="margin-bottom:10px">
+      <button type="button" class="pill" onclick="setDeltaSim(0.0, this)">δ = 0,0R</button>
+      <button type="button" class="pill active" onclick="setDeltaSim(0.1, this)">δ = 0,1R (Utama)</button>
+      <button type="button" class="pill" onclick="setDeltaSim(0.2, this)">δ = 0,2R</button>
+      <button type="button" class="pill" onclick="setDeltaSim(0.3, this)">δ = 0,3R</button>
+    </div>
+    <div class="slider-row">
+      <label for="pRevSlider">Peluang <code>p_rev</code> (Reversal):</label>
+      <input type="range" id="pRevSlider" min="0" max="80" value="35" oninput="updateRm27Sim('rev')">
+      <span class="val" id="pRevTxt">35%</span>
+    </div>
+    <div class="slider-row">
+      <label for="pContSlider">Peluang <code>p_cont</code> (Continuation):</label>
+      <input type="range" id="pContSlider" min="0" max="90" value="48" oninput="updateRm27Sim('cont')">
+      <span class="val" id="pContTxt">48%</span>
+    </div>
+    <div style="font-size:13.2px;color:var(--muted);margin-bottom:10px">
+      Sisa otomatis → <code>p_net</code> (Netral) = <strong id="pNetTxt">17%</strong> (total selalu 100%).
+    </div>
+    <div class="zone-bar" id="rm27ZoneBar" style="height:36px">
+      <div class="zone-cont" id="zContBox">Continuation</div>
+      <div class="zone-abs" id="zAbsBox">Abstain</div>
+      <div class="zone-rev" id="zRevBox">Reversal</div>
+      <div class="zone-marker" id="rm27Marker" style="left:50%"></div>
+    </div>
+    <div id="rm27Output" style="margin-top:10px;font-size:14px"></div>
+  </div>
+
+  <div class="grid-2" style="margin-top:18px;align-items:start">
+    <div class="mini-box">
+      <h3>📋 Hasil RM-27 pada <code>calib</code> 2024 (<code>δ = 0,1R</code>, Pra-Uji)</h3>
+      <div class="table-wrap" style="margin:8px 0 0">
+        <table>
+          <thead>
+            <tr><th>Model</th><th class="num">Rev / Cont / Abs</th><th class="num">Cakupan</th><th class="num">Total R</th><th class="num">Mean/Ev</th><th class="num">Mean/Rek</th></tr>
+          </thead>
+          <tbody>
+            <tr class="win"><td><strong>LSTM Cal (τ=1,24)</strong></td><td class="num"><strong>103 / 0 / 124</strong></td><td class="num"><strong>45,4%</strong></td><td class="num"><strong>+1,9126</strong></td><td class="num">+0,0084</td><td class="num">+0,0186</td></tr>
+            <tr><td>LSTM Raw (τ=1,00)</td><td class="num">57 / 18 / 152</td><td class="num">33,0%</td><td class="num">+2,0047</td><td class="num">+0,0088</td><td class="num">+0,0267</td></tr>
+            <tr><td>B0 akhir (dev)</td><td class="num">0 / 0 / 227</td><td class="num">0,0%</td><td class="num">0,0000</td><td class="num">0,0000</td><td class="num">–</td></tr>
+            <tr><td>B1 akhir (dev)</td><td class="num">23 / 0 / 204</td><td class="num">10,1%</td><td class="num">−5,3888</td><td class="num">−0,0237</td><td class="num">−0,2343</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="margin-top:8px;font-size:12.5px;color:var(--muted)">
+        Rincian level LSTM Cal (<code>δ=0,1R</code>): PDH <code>58</code> rekom (<code>−7,87R</code>), PDL <code>45</code> rekom (<code>+9,78R</code>). B0 selalu Abstain karena <code>E_rev(B0) = +0,0014R</code>.
+      </p>
+    </div>
+
+    <div class="mini-box">
+      <h3>📉 Kurva Cakupan–Kinerja pada Grid <code>δ</code> (<code>calib</code> 2024)</h3>
+      <div class="table-wrap" style="margin:8px 0 0">
+        <table>
+          <thead>
+            <tr><th class="num">δ (R)</th><th>Batas <code>E_rev</code></th><th class="num">Rev / Cont / Abs</th><th class="num">Cakupan</th><th class="num">Total R</th><th class="num">Mean/Rek</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="num">0,0</td><td><code>≥ 0 / ≤ 0</code></td><td class="num">177 / 50 / 0</td><td class="num">100,0%</td><td class="num">+23,7584</td><td class="num">+0,1047</td></tr>
+            <tr class="win"><td class="num"><strong>0,1 ★</strong></td><td><code>≥ +0,1 / ≤ −0,2</code></td><td class="num"><strong>103 / 0 / 124</strong></td><td class="num"><strong>45,4%</strong></td><td class="num"><strong>+1,9126</strong></td><td class="num"><strong>+0,0186</strong></td></tr>
+            <tr><td class="num">0,2</td><td><code>≥ +0,2 / ≤ −0,4</code></td><td class="num">46 / 0 / 181</td><td class="num">20,3%</td><td class="num">+2,6705</td><td class="num">+0,0581</td></tr>
+            <tr><td class="num">0,3</td><td><code>≥ +0,3 / ≤ −0,6</code></td><td class="num">16 / 0 / 211</td><td class="num">7,0%</td><td class="num">−0,1342</td><td class="num">−0,0084</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="margin-top:8px;font-size:12.5px;color:var(--muted)">
+        <strong>Catatan jujur metodologi:</strong> Tabel <code>calib</code> 2024 di atas bersifat <em>verifikasi pra-uji</em> (bukan uji hipotesis resmi, karena <code>τ</code> diestimasi pada 2024) dan <strong>tidak dipakai untuk mengubah <code>δ = 0,1R</code></strong> yang sudah terkunci di Kunci-1.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ====================================================================== -->
+<!-- SECTION 10 : 🔒 KUNCI-2 PEMBEKUAN PENUH & SEGEL SHA-256                -->
+<!-- ====================================================================== -->
+<section class="card stage-rose" id="kunci2">
+  <span class="sec-tag rose">Bagian 10 · 🔒 Kunci-2 (Pembekuan Pra-Uji)</span>
+  <h2>🔒 Kunci-2: Pembekuan Penuh Komponen LSTM &amp; Segel Manifest SHA-256</h2>
+  <p class="intro">
+    Sebelum data uji <code>runs/tesis/kunci_uji/</code> (341 event Jan 2025 – Jul 2026) boleh disentuh, <strong>seluruh komponen akhir LSTM wajib dibekukan, dijadikan hanya-baca (<em>read-only</em>), dan disegel dengan sidik jari kriptografi SHA-256</strong>. Tujuannya membuktikan secara objektif kepada penguji bahwa tidak ada satu pun bobot, scaler, <code>τ</code>, <code>m_rev</code>, <code>δ</code>, atau baris kode yang diubah-ubah setelah melihat data uji.
+  </p>
+
+  <div class="stage-ribbon" aria-label="Posisi alur Kunci-2">
+    <span class="stage-chip done">RM-22..24</span>
+    <span class="stage-arrow">→</span>
+    <span class="stage-chip done">RM-25 (.pt+scaler)</span>
+    <span class="stage-arrow">→</span>
+    <span class="stage-chip done">RM-26 (τ=1,2375)</span>
+    <span class="stage-arrow">→</span>
+    <span class="stage-chip done">RM-27 (m_rev, δ)</span>
+    <span class="stage-arrow">→</span>
+    <span class="stage-chip active" style="background:var(--rose);border-color:var(--rose)">🔒 Kunci-2 Tersegel!</span>
+    <span class="stage-arrow">⇢</span>
+    <span class="stage-chip lock">🎯 Uji Final (Belum Dibuka)</span>
+  </div>
+
+  <div class="callout rose">
+    <strong>Analogi Pemula — Amplop Disegel &amp; Sidik Jari SHA-256:</strong><br>
+    Bayangkan semua jawaban akhir Anda (5 file bobot <code>.pt</code>, <code>scaler</code>, angka <code>τ = 1,237549</code>, <code>m_rev = +0,562671R</code>, dan <code>δ = 0,1R</code>) dimasukkan ke amplop kaca terkunci (<code>kunci_2/</code>, izin <code>0o444</code>) lalu dicatat <strong>sidik jari SHA-256</strong>-nya. Jika ada 1 huruf atau 1 digit desimal saja berubah, sidik jari 64-karakter itu langsung berubah total dan perintah <code>verifikasi-kunci-2</code> otomatis menolak berjalan (<code>Kunci2Error</code>)!
+  </div>
+
+  <h3 style="margin:18px 0 8px;font-size:16.5px">Alur 4 Langkah Pembekuan di <code>src/model/lstm/kunci_2.py</code></h3>
+  <div class="flow-row">
+    <div class="step-box">
+      <div class="step-num">Langkah 1 · Audit Berantai</div>
+      <h4>Cek RM-22 s.d. RM-27</h4>
+      <p>Memverifikasi seluruh hash antar-tahap saling cocok (tidak ada berkas basi), Kunci-1 cocok, dan 5 <code>.pt</code> + scaler di disk utuh.</p>
+    </div>
+    <div class="step-box amber">
+      <div class="step-num">Langkah 2 · Paket Mandiri</div>
+      <h4>Salin ke <code>kunci_2/</code></h4>
+      <p>Menyalin 5 <code>.pt</code> + <code>scaler_L46_h32.json</code>, lalu menulis <code>kunci_2_lstm.json</code> (semua parameter beku) dan <code>KUNCI-2_lstm_beku.md</code> (sertifikat).</p>
+    </div>
+    <div class="step-box rose">
+      <div class="step-num">Langkah 3 · Segel Atomik</div>
+      <h4><code>0o444</code> + Manifest SHA-256</h4>
+      <p>Menulis <code>MANIFEST_KUNCI_2_LSTM.json</code> (mencatat SHA-256 8 berkas beku, 12 artefak tahap, 13 skrip Python, Kunci-1, &amp; data input) lalu mengunci izin <em>read-only</em>.</p>
+    </div>
+    <div class="step-box green">
+      <div class="step-num">Langkah 4 · Verifikasi Mandiri</div>
+      <h4><code>verifikasi-kunci-2</code> OK</h4>
+      <p>Audit ulang 8/8 berkas beku + 13/13 skrip + Kunci-1 + data pipeline: <strong>100% cocok</strong>. Menjalankan ulang <code>kunci-2</code> bersifat idempoten &amp; anti-timpa.</p>
+    </div>
+  </div>
+
+  <h3 style="margin:18px 0 8px;font-size:16.5px">🔐 Inventaris Berkas Tersegel di <code>runs/tesis/model/lstm/kunci_2/</code> (Dikunci <code>2026-11-25 18:05:07 WIB</code>)</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Berkas di <code>kunci_2/</code></th><th>Isi &amp; Peran</th><th class="num">Ukuran</th><th>SHA-256 (16 hex awal)</th><th>Status</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>lstm_L46_h32_seed20261119.pt</code></td><td>Bobot LSTM seed #1 (epoch 25)</td><td class="num">27.629 B</td><td><code>5e27478581f5dfc9…</code></td><td><span class="pill-ok">0o444 OK</span></td></tr>
+        <tr><td><code>lstm_L46_h32_seed20261120.pt</code></td><td>Bobot LSTM seed #2 (epoch 17)</td><td class="num">27.629 B</td><td><code>d1eb171cd2119ad6…</code></td><td><span class="pill-ok">0o444 OK</span></td></tr>
+        <tr><td><code>lstm_L46_h32_seed20261121.pt</code></td><td>Bobot LSTM seed #3 (epoch 19)</td><td class="num">27.629 B</td><td><code>4b9706ec90fc233d…</code></td><td><span class="pill-ok">0o444 OK</span></td></tr>
+        <tr><td><code>lstm_L46_h32_seed20261122.pt</code></td><td>Bobot LSTM seed #4 (epoch 29)</td><td class="num">27.629 B</td><td><code>de0163d458af6040…</code></td><td><span class="pill-ok">0o444 OK</span></td></tr>
+        <tr><td><code>lstm_L46_h32_seed20261123.pt</code></td><td>Bobot LSTM seed #5 (epoch 34)</td><td class="num">27.629 B</td><td><code>9dedac45356408e4…</code></td><td><span class="pill-ok">0o444 OK</span></td></tr>
+        <tr><td><code>scaler_L46_h32.json</code></td><td><code>SequenceScaler3D</code> (85% awal <code>dev</code>)</td><td class="num">967 B</td><td><code>977e6b03528135a8…</code></td><td><span class="pill-ok">0o444 OK</span></td></tr>
+        <tr><td><code>kunci_2_lstm.json</code></td><td>Parameter beku: <code>L46_h32</code>, <code>τ</code>, <code>m_rev</code>, <code>δ</code>, B0/B1</td><td class="num">3.871 B</td><td><code>5f3c37b70aaa62f8…</code></td><td><span class="pill-ok">0o444 OK</span></td></tr>
+        <tr><td><code>KUNCI-2_lstm_beku.md</code></td><td>Sertifikat pembekuan siap lampiran tesis</td><td class="num">2.150 B</td><td><code>05f0ccbc47c9bee2…</code></td><td><span class="pill-ok">0o444 OK</span></td></tr>
+        <tr class="win"><td><strong><code>MANIFEST_KUNCI_2_LSTM.json</code></strong></td><td><strong>Segel master SHA-256 (8 beku + 12 artefak + 13 skrip)</strong></td><td class="num"><strong>5.600+ B</strong></td><td><strong><code>053c5a0e8d35a55d…</code></strong></td><td><span class="pill-ok">TERSEGEL</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout green">
+    <strong>Jaminan Keamanan Data Uji:</strong> Seluruh tahapan RM-25, RM-26, RM-27, dan Kunci-2 selesai <strong>tanpa pernah membuka folder <code>runs/tesis/kunci_uji/</code></strong>. Pemeriksaan <code>pdhl_data verify --config configs/tesis.json</code> tetap <strong><code>19/19 OK</code></strong> dan <code>verifikasi-kunci-2</code> menghasilkan <strong><code>OK (8/8 berkas beku, 13/13 skrip)</code></strong>.
+  </div>
+
+  <div class="mini-calc"><span class="hl"># Menjalankan RM-25 → RM-26 → RM-27 → Kunci-2 sekaligus:</span>
+PYTHONPATH=src .venv/bin/python -m model.lstm lanjutan --config configs/tesis.json --device cpu
+
+<span class="hl"># Mengaudit ulang segel Kunci-2 kapan saja (tanpa PyTorch pun bisa!):</span>
+PYTHONPATH=src python3 -m model.lstm verifikasi-kunci-2 --config configs/tesis.json</div>
+</section>
+
+<!-- ====================================================================== -->
+<!-- SECTION 11 : GLOSARIUM & ROADMAP TERUPDATE                             -->
+<!-- ====================================================================== -->
 <section class="card" id="glosarium">
-  <span class="sec-tag">Bagian 7 · Kamus Pemula &amp; Roadmap</span>
-  <h2>Glosarium Cepat &amp; Langkah Selanjutnya Menuju Kunci-2</h2>
-  <p class="intro">Istilah kunci yang sering ditanyakan saat bimbingan atau sidang, dijelaskan singkat:</p>
+  <span class="sec-tag">Bagian 11 · Kamus Pemula &amp; Roadmap Lengkap</span>
+  <h2>Glosarium Cepat &amp; Status Roadmap Penelitian</h2>
+  <p class="intro">Istilah kunci dari RM-22 hingga Kunci-2 yang sering ditanyakan saat bimbingan atau sidang:</p>
 
   <dl class="gloss-grid">
     <div class="gloss-item"><dt>Lookback (<code>L = 46</code>)</dt><dd>Banyaknya candle H1 ke belakang yang dibaca LSTM. <code>46</code> bar = tepat <strong>2 sesi perdagangan XAUUSD penuh</strong> (sesi kemarin pembentuk PDH/PDL + sesi hari ini).</dd></div>
-    <div class="gloss-item"><dt><code>ATR_t*</code></dt><dd>Nilai <code>atr14_h1</code> (rata-rata rentang 14 jam terakhir) pada candle keputusan <code>t*</code> — dipakai sebagai "penggaris adil" agar pola harga 2016 &amp; 2024 setara.</dd></div>
-    <div class="gloss-item"><dt><code>EMA50</code> &amp; <code>vol_regime</code></dt><dd><code>EMA50</code> = rata-rata bergerak eksponensial 50 jam (penunjuk tren H1); <code>vol_regime</code> = rasio ATR saat ini vs rata-rata ATR 120 bar (~5 hari).</dd></div>
-    <div class="gloss-item"><dt>Seed (<code>20261119..20261123</code>)</dt><dd>Angka pengunci proses acak (bobot awal, urutan batch, dropout) agar hasil 100% bisa diulang; 5 seed dirata-rata logits-nya agar stabil.</dd></div>
-    <div class="gloss-item"><dt>Early Stopping (85% / 15%)</dt><dd>Rem otomatis memakai 15% ujung data latih; menghentikan epoch bila Log-Loss tidak membaik 12 epoch berturut-turut tanpa mengintip tahun ujian.</dd></div>
-    <div class="gloss-item"><dt>OOF &amp; Purging</dt><dd>Prediksi di luar data latih (<em>Out-of-Fold</em>). <em>Purging</em> membuang event ujung latih yang jendela label (+8 jam) melintasi awal tahun validasi.</dd></div>
+    <div class="gloss-item"><dt><code>ATR_t*</code> &amp; <code>EMA50</code></dt><dd><code>ATR_t*</code> = rata-rata rentang 14 jam pada bar keputusan (penggaris adil lintas tahun); <code>EMA50</code> = tren eksponensial 50 jam.</dd></div>
+    <div class="gloss-item"><dt>Model Akhir (RM-25)</dt><dd>Pelatihan penuh 1 konfigurasi pemenang (<code>L46_h32</code>) pada seluruh <code>dev</code> (1.841 event × 5 seed), disimpan sebagai 5 file bobot <code>.pt</code> + <code>scaler</code>.</dd></div>
+    <div class="gloss-item"><dt>Temperature Scaling (<code>τ</code>)</dt><dd>Skalar suhu tunggal (<code>τ = 1,2375</code>) pembagi <em>logits</em> sebelum <code>Softmax</code>; memperbaiki kejujuran probabilitas di 2024 tanpa melatih ulang bobot atau mengubah ranking.</dd></div>
+    <div class="gloss-item"><dt>Golden-Section Search</dt><dd>Algoritma optimasi 1 dimensi tanpa turunan pada <code>[0,05; 20,0]</code> (terkunci di Kunci-1) untuk mencari <code>τ</code> peminimal Log-Loss secara deterministik.</dd></div>
+    <div class="gloss-item"><dt>ECE &amp; Diagram Reliabilitas</dt><dd><em>Expected Calibration Error</em> mengukur rata-rata selisih antara keyakinan prediksi dan akurasi nyata lintas 10 bin; makin dekat ke 0 (garis diagonal) makin jujur.</dd></div>
+    <div class="gloss-item"><dt><code>m_rev</code>, <code>m_cont</code>, &amp; <code>E_rev</code></dt><dd>Rata-rata imbal hasil R event Netral <code>dev</code> (<code>+0,5627R</code> &amp; <code>−0,2813R</code>), dipakai menghitung Nilai Harapan <code>E_rev</code> dan <code>E_cont = −0,5·E_rev</code>.</dd></div>
+    <div class="gloss-item"><dt>Ambang <code>δ = 0,1R</code> &amp; <code>realized_R</code></dt><dd>Batas minimum nilai harapan agar sistem berani memberi rekomendasi arah (bila tidak tembus → <strong>Abstain <code>0R</code></strong>); <code>realized_R</code> adalah untung/rugi nyata di pasar.</dd></div>
+    <div class="gloss-item"><dt>🔒 Kunci-2 &amp; SHA-256</dt><dd>Pembekuan seluruh komponen model dalam folder <em>read-only</em> dengan sidik jari kriptografi SHA-256 sebelum data uji <code>kunci_uji/</code> boleh dibuka.</dd></div>
   </dl>
 
-  <h3 style="margin:22px 0 8px;font-size:16.5px">🗺️ Roadmap Lengkap Penelitian (RM-22 s.d. Uji Final)</h3>
+  <h3 style="margin:22px 0 8px;font-size:16.5px">🗺️ Roadmap Lengkap Jalur LSTM (RM-22 s.d. Uji Final)</h3>
   <div class="roadmap-list">
     <div class="rm-item done">
       <div class="rm-badge">✅ RM-22</div>
-      <div class="rm-body"><strong>Fitur (13 Fitur Sekuensial v2) — Sudah Selesai</strong><p>13 fitur <em>point-in-time</em> dari Proposal Tabel 4.5, Kuesioner RQ1, &amp; Selected Papers + lulus uji pemotongan <code>L = 96</code> (0 mismatch).</p></div>
+      <div class="rm-body"><strong>Fitur (13 Fitur Sekuensial v2) — Selesai</strong><p>13 fitur <em>point-in-time</em> dari Proposal Tabel 4.5, Kuesioner RQ1, &amp; Selected Papers + lulus uji pemotongan <code>L = 96</code> (0 mismatch).</p></div>
     </div>
     <div class="rm-item done">
       <div class="rm-badge">✅ RM-23</div>
-      <div class="rm-body"><strong>Pembanding Non-Model (B0 &amp; B1) — Sudah Selesai</strong><p><code>B0 = 0,9698</code> &amp; <code>B1 (wick ≥ 2/3) = 0,9678</code> — SHA-256 100% identik dengan jalur Gradient Boosting.</p></div>
+      <div class="rm-body"><strong>Pembanding Non-Model (B0 &amp; B1) — Selesai</strong><p><code>B0 = 0,9698</code> &amp; <code>B1 (wick ≥ 2/3) = 0,9678</code> — SHA-256 100% identik dengan jalur Gradient Boosting.</p></div>
+    </div>
+    <div class="rm-item done">
+      <div class="rm-badge">✅ RM-24</div>
+      <div class="rm-body"><strong>Walk-Forward 2019–2023 — Selesai</strong><p>10 konfigurasi × 5 fold × 5 seed pada 1.152 event OOF → terpilih <strong><code>L46_h32</code> (OOF Log-Loss 0,9185</strong>, mengalahkan B0, B1, &amp; LightGBM 0,9233).</p></div>
+    </div>
+    <div class="rm-item done">
+      <div class="rm-badge">✅ RM-25</div>
+      <div class="rm-body"><strong>Model Akhir — Selesai</strong><p><code>L46_h32</code> dilatih penuh pada 1.841 event <code>dev</code> × 5 seed (rata-rata epoch 24,8; ES Log-Loss 0,8975), disimpan 5 <code>.pt</code> + <code>scaler_L46_h32.json</code> (uji round-trip <code>0,00e+00</code>).</p></div>
+    </div>
+    <div class="rm-item done">
+      <div class="rm-badge">✅ RM-26</div>
+      <div class="rm-body"><strong>Kalibrasi <code>τ</code> (Temperature Scaling 2024) — Selesai</strong><p><em>Golden-section search</em> pada 227 event <code>calib</code> 2024 → <strong><code>τ = 1,237549</code></strong>; Log-Loss turun <code>0,9655 → 0,9597</code> (unggul vs B0 0,9967 &amp; B1 1,0013) &amp; ECE turun 33% (<code>0,1013 → 0,0676</code>).</p></div>
+    </div>
+    <div class="rm-item done">
+      <div class="rm-badge">✅ RM-27</div>
+      <div class="rm-body"><strong>Aturan Keputusan &amp; <code>realized_R</code> — Selesai</strong><p><code>m_rev = +0,5627R</code>, <code>m_cont = −0,2813R</code> (385 Netral <code>dev</code>), <code>δ = 0,1R</code> → pada <code>calib</code> 2024: <code>103</code> Rev / <code>0</code> Cont / <code>124</code> Abstain (cakupan 45,4%, total <code>+1,9126R</code>).</p></div>
     </div>
     <div class="rm-item now">
-      <div class="rm-badge">✅ RM-24 ★</div>
-      <div class="rm-body"><strong>Walk-Forward 2019–2023 — Sudah Selesai (Posisi Sekarang)</strong><p>10 konfigurasi × 5 fold × 5 seed pada 1.152 event OOF → terpilih <strong><code>L46_h32</code> (OOF Log-Loss 0,9185</strong>, mengalahkan B0, B1, &amp; LightGBM 0,9233).</p></div>
-    </div>
-    <div class="rm-item next">
-      <div class="rm-badge">🔜 RM-25</div>
-      <div class="rm-body"><strong>Model Akhir — Latih <code>L46_h32</code> pada Seluruh <code>dev</code> (2016–2023)</strong><p>Tidak pakai Walk-Forward lagi: hanya pemenang <code>L46_h32</code> dilatih penuh (1.841 event × 5 seed) dan disimpan sebagai 5 checkpoint <code>.pt</code> + scaler.</p></div>
-    </div>
-    <div class="rm-item next">
-      <div class="rm-badge">🔜 RM-26</div>
-      <div class="rm-body"><strong>Kalibrasi <code>τ</code> — Temperature Scaling di <code>calib</code> 2024 (227 Event)</strong><p>Mencari 1 skalar suhu <code>τ</code> (<code>Softmax(logits / τ)</code>) pada data 2024 agar probabilitas terkalibrasi jujur (tanpa melatih ulang model).</p></div>
-    </div>
-    <div class="rm-item focus">
-      <div class="rm-badge">👉 RM-27</div>
-      <div class="rm-body"><strong>Aturan Keputusan — Ubah Peluang Terkalibrasi → Reversal / Continuation / Abstain</strong><p>Hitung Nilai Harapan <code>E_rev = (+2)·p_rev + (−1)·p_cont + m_rev·p_net</code> dan <code>E_cont = −0,5·E_rev</code> (dengan <code>m_rev</code> rata-rata R Netral <code>dev</code> &amp; ambang <code>δ = 0,1R</code>): <code>E_rev ≥ +0,1R</code> → <strong>Reversal</strong>, <code>E_rev ≤ −0,2R</code> → <strong>Continuation</strong>, di antaranya → <strong>Abstain (0R)</strong>. Lalu dicatat untung/rugi nyata <code>realized_R</code>.</p></div>
-    </div>
-    <div class="rm-item lock">
-      <div class="rm-badge">🔒 Kunci-2</div>
-      <div class="rm-body"><strong>Pembekuan Penuh (Serentak LSTM &amp; Gradient Boosting)</strong><p>Bekukan seluruh komponen (<code>model .pt + scaler + τ + m_rev + δ = 0,1R</code>) dan segel manifest SHA-256 sebelum menyentuh data uji.</p></div>
+      <div class="rm-badge">✅ 🔒 Kunci-2 ★</div>
+      <div class="rm-body"><strong>Pembekuan Penuh LSTM — Selesai &amp; Tersegel (Posisi Sekarang)</strong><p>8 berkas beku (5 <code>.pt</code> + scaler + <code>kunci_2_lstm.json</code> + sertifikat) + 13 skrip disegel di <code>runs/tesis/model/lstm/kunci_2/MANIFEST_KUNCI_2_LSTM.json</code> (<code>053c5a0e…</code>), terverifikasi <code>OK</code>.</p></div>
     </div>
     <div class="rm-item lock">
       <div class="rm-badge">🎯 Uji Final</div>
-      <div class="rm-body"><strong>Eksekusi Tunggal di <code>kunci_uji/</code> (2025–Jul 2026, 341 Event)</strong><p>Buka folder <code>kunci_uji/</code> tepat <strong>1 kali saja</strong> tanpa latih ulang untuk evaluasi resmi RQ2.1 (bootstrap klaster 2.000×) &amp; RQ2.2 (uji plasebo 1.000 set).</p></div>
+      <div class="rm-body"><strong>Eksekusi Tunggal di <code>kunci_uji/</code> (2025–Jul 2026, 341 Event) — Belum Dibuka</strong><p>Buka folder <code>kunci_uji/</code> tepat <strong>1 kali saja</strong> tanpa latih ulang untuk evaluasi resmi RQ2.1 (bootstrap klaster 2.000×) &amp; RQ2.2 (uji plasebo 1.000 set).</p></div>
     </div>
   </div>
 </section>
 
 <footer>
-  Dibuat otomatis dari keluaran riil <code>src/model/lstm/</code> (13 fitur v2) · Pipeline <code>pdhl_data</code> v1.1.0 · 256/256 tes OK · Data uji tetap tersegel.
+  Dibuat dari keluaran riil <code>src/model/lstm/</code> (RM-22 s.d. Kunci-2) · Pipeline <code>pdhl_data</code> v1.1.0 (19/19 OK) · 26/26 tes LSTM OK · Kunci-2 Tersegel · Data uji tetap tertutup.
 </footer>
 </main>
 
 <script>
+function fmt(n, d) { return n.toFixed(d).replace('.', ','); }
+
+/* ---------------- Bagian 3: Simulasi Candle PDH/PDL ---------------- */
 function setLevelMode(mode, btn) {
   document.querySelectorAll('#fitur .pill-bar .pill').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
@@ -702,6 +1452,7 @@ function setLevelMode(mode, btn) {
   }
 }
 
+/* ---------------- Bagian 3: Tensor 3D Toggle ---------------- */
 let scaledMode = false;
 const rawSample = [
   [-1.8, 0.2, 0.9, 0.1, 0.2, 0.9, 0.92, -0.1, 0.50, 0.87, 0.95, 0.31, 0.69],
@@ -751,6 +1502,7 @@ function toggleScale() {
   renderTensor();
 }
 
+/* ---------------- Bagian 4: 3 Gerbang LSTM ---------------- */
 const gateNotes = [
   '<strong>Sedang aktif — Forget Gate:</strong> Dari 46 jam terakhir, gerbang ini menyaring riak lama yang sudah basi agar fokus pada kondisi pendekatan PDH/PDL saat ini.',
   '<strong>Sedang aktif — Input Gate:</strong> Saat candle menyentuh PDH jauh di atas EMA50 dengan volatilitas naik dan wick penolakan + lonjakan volume jam-sama, gerbang ini menyimpannya kuat ke memori.',
@@ -765,19 +1517,21 @@ function highlightGate(idx, btn) {
   document.getElementById('gateDetail').innerHTML = gateNotes[idx];
 }
 
+/* ---------------- Bagian 5: Simulator Log-Loss ---------------- */
 function updateLogLoss() {
   const p = Number(document.getElementById('llSlider').value) / 100;
   const ll = -Math.log(p);
-  document.getElementById('llProbTxt').textContent = p.toFixed(2).replace('.', ',');
+  document.getElementById('llProbTxt').textContent = fmt(p, 2);
   let verdict = '';
   if (ll < 0.4) verdict = '<span style="color:#16a34a;font-weight:700">Sangat bagus!</span> Yakin pada kelas benar, hukuman kecil.';
   else if (ll < 0.97) verdict = '<span style="color:#0d9488;font-weight:700">Lebih baik dari baseline B0 (0,9698).</span>';
   else if (ll < 1.5) verdict = '<span style="color:#d97706;font-weight:700">Kurang yakin</span> — lebih buruk dari baseline B0.';
   else verdict = '<span style="color:#e11d48;font-weight:700">Hukuman berat!</span> Terlalu meremehkan kelas yang benar.';
   document.getElementById('llResult').innerHTML =
-    'Rumus: <code>−ln(' + p.toFixed(2) + ')</code> = <strong style="font-size:18px">' + ll.toFixed(4).replace('.', ',') + '</strong> · ' + verdict;
+    'Rumus: <code>−ln(' + p.toFixed(2) + ')</code> = <strong style="font-size:18px">' + fmt(ll, 4) + '</strong> · ' + verdict;
 }
 
+/* ---------------- Bagian 6: Bar Ringkasan & Grid RM-24 ---------------- */
 const summaryData = [
   { name: 'LSTM v2 (L46_h32, 13f) ★', val: 0.9185, color: '#0d9488' },
   { name: 'LightGBM (d2_n100_m50)', val: 0.9233, color: '#2563eb' },
@@ -792,7 +1546,7 @@ function renderSummaryBars() {
     return '<div class="bar-row">' +
       '<div class="bar-label">' + d.name + '</div>' +
       '<div class="bar-track"><div class="bar-fill" style="width:' + pct.toFixed(1) + '%;background:' + d.color + '"></div></div>' +
-      '<div class="bar-num">' + d.val.toFixed(4).replace('.', ',') + '</div>' +
+      '<div class="bar-num">' + fmt(d.val, 4) + '</div>' +
       '</div>';
   }).join('');
 }
@@ -809,7 +1563,6 @@ const gridData = [
   { rank:9, id:'L60_h16', L:60, h:16, y19:0.9221, y20:0.9742, y21:0.9109, y22:0.9007, y23:0.9046, ll:0.9223, br:0.5524, ece:0.0361, ep:23.4 },
   { rank:10,id:'L23_h16', L:23, h:16, y19:0.9229, y20:0.9735, y21:0.9101, y22:0.9072, y23:0.9025, ll:0.9230, br:0.5531, ece:0.0362, ep:23.3 },
 ];
-function fmt(n, d) { return n.toFixed(d).replace('.', ','); }
 function renderGrid(filter, btn) {
   if (btn) {
     document.querySelectorAll('#hasil .pill-bar .pill').forEach(b => b.classList.remove('active'));
@@ -829,12 +1582,196 @@ function renderGrid(filter, btn) {
   ).join('');
 }
 
+/* ---------------- Bagian 8: Simulator Temperature Scaling & SVG Reliabilitas ---------------- */
+const sampleLogits = [-0.6284, 0.9155, -0.7304]; // 2024-10-01_PDH (label asli: Reversal)
+function softmaxJs(zs, tau) {
+  const sc = zs.map(z => z / tau);
+  const mx = Math.max(...sc);
+  const ex = sc.map(v => Math.exp(v - mx));
+  const sum = ex.reduce((a, b) => a + b, 0);
+  return ex.map(v => v / sum);
+}
+function setTauPreset(val) {
+  document.getElementById('tauSlider').value = Math.round(val * 100);
+  updateTauSim();
+}
+function updateTauSim() {
+  const tau = Number(document.getElementById('tauSlider').value) / 100;
+  document.getElementById('tauValTxt').textContent = fmt(tau, 2);
+  const p = softmaxJs(sampleLogits, tau);
+  const ll = -Math.log(p[0]);
+  const items = [
+    { name: 'Reversal (label asli)', val: p[0], color: '#0d9488' },
+    { name: 'Continuation (pred #1)', val: p[1], color: '#2563eb' },
+    { name: 'Netral', val: p[2], color: '#d97706' },
+  ];
+  document.getElementById('tauBars').innerHTML = items.map(it =>
+    '<div class="bar-row">' +
+    '<div class="bar-label">' + it.name + '</div>' +
+    '<div class="bar-track"><div class="bar-fill" style="width:' + (it.val * 100).toFixed(1) + '%;background:' + it.color + '"></div></div>' +
+    '<div class="bar-num">' + fmt(it.val * 100, 1) + '%</div>' +
+    '</div>'
+  ).join('');
+  const mood = tau < 0.95 ? 'Terlalu tajam (makin overconfident)'
+    : tau <= 1.05 ? 'Kondisi mentah tanpa kalibrasi (τ ≈ 1,00)'
+    : tau <= 1.35 ? 'Zona optimal 2024 — keyakinan melunak & lebih jujur!'
+    : 'Sangat dingin — peluang mendekati seragam (33% / 33% / 33%)';
+  document.getElementById('tauNote').innerHTML =
+    'Log-Loss event ini: <strong>' + fmt(ll, 4) + '</strong> · Status: <strong>' + mood + '</strong>';
+}
+
+function renderReliabilitySvg() {
+  // Data 10-bin riil calib 2024 dari kalibrasi_rekonsiliasi.json (top-confidence)
+  const rawPts = [
+    { mp: 0.3953, of: 0.5000, n: 4 },
+    { mp: 0.4647, of: 0.6458, n: 48 },
+    { mp: 0.5534, of: 0.4595, n: 74 },
+    { mp: 0.6488, of: 0.6173, n: 81 },
+    { mp: 0.7187, of: 0.5000, n: 20 },
+  ];
+  const calPts = [
+    { mp: 0.3869, of: 0.3333, n: 6 },
+    { mp: 0.4567, of: 0.6000, n: 70 },
+    { mp: 0.5514, of: 0.5263, n: 95 },
+    { mp: 0.6358, of: 0.5893, n: 56 },
+  ];
+  const x0 = 52, y0 = 192, w = 296, h = 160;
+  const px = v => x0 + ((v - 0.3) / 0.5) * w;
+  const py = v => y0 - ((v - 0.3) / 0.5) * h;
+
+  let s = '';
+  // Grid & sumbu 0.3..0.8
+  [0.3, 0.4, 0.5, 0.6, 0.7, 0.8].forEach(v => {
+    const gx = px(v), gy = py(v);
+    s += '<line x1="' + gx.toFixed(1) + '" y1="' + (y0 - h) + '" x2="' + gx.toFixed(1) + '" y2="' + y0 + '" stroke="#e2e8f0" stroke-width="1"/>';
+    s += '<line x1="' + x0 + '" y1="' + gy.toFixed(1) + '" x2="' + (x0 + w) + '" y2="' + gy.toFixed(1) + '" stroke="#e2e8f0" stroke-width="1"/>';
+    s += '<text x="' + gx.toFixed(1) + '" y="' + (y0 + 15) + '" text-anchor="middle" font-size="10" fill="#64748b">' + fmt(v, 1) + '</text>';
+    s += '<text x="' + (x0 - 8) + '" y="' + (gy + 3).toFixed(1) + '" text-anchor="end" font-size="10" fill="#64748b">' + fmt(v, 1) + '</text>';
+  });
+  // Diagonal sempurna y = x
+  s += '<line x1="' + px(0.3) + '" y1="' + py(0.3) + '" x2="' + px(0.8) + '" y2="' + py(0.8) + '" stroke="#94a3b8" stroke-width="1.6" stroke-dasharray="5,4"/>';
+  // Kurva Raw (merah)
+  const rawPath = rawPts.map((d, i) => (i === 0 ? 'M ' : 'L ') + px(d.mp).toFixed(1) + ' ' + py(d.of).toFixed(1)).join(' ');
+  s += '<path d="' + rawPath + '" fill="none" stroke="#e11d48" stroke-width="2" stroke-opacity="0.7"/>';
+  rawPts.forEach(d => {
+    s += '<circle cx="' + px(d.mp).toFixed(1) + '" cy="' + py(d.of).toFixed(1) + '" r="4.5" fill="#e11d48" opacity="0.85"/>';
+  });
+  // Kurva Calibrated (teal)
+  const calPath = calPts.map((d, i) => (i === 0 ? 'M ' : 'L ') + px(d.mp).toFixed(1) + ' ' + py(d.of).toFixed(1)).join(' ');
+  s += '<path d="' + calPath + '" fill="none" stroke="#0d9488" stroke-width="2.6"/>';
+  calPts.forEach(d => {
+    s += '<circle cx="' + px(d.mp).toFixed(1) + '" cy="' + py(d.of).toFixed(1) + '" r="5.2" fill="#0d9488" stroke="#fff" stroke-width="1.4"/>';
+  });
+  // Label sumbu & legenda
+  s += '<text x="' + (x0 + w / 2) + '" y="226" text-anchor="middle" font-size="10.5" font-weight="700" fill="#334155">Rata-rata Keyakinan Prediksi (Confidence)</text>';
+  s += '<text x="14" y="' + (y0 - h / 2) + '" text-anchor="middle" font-size="10.5" font-weight="700" fill="#334155" transform="rotate(-90 14 ' + (y0 - h / 2) + ')">Akurasi Nyata</text>';
+  s += '<circle cx="66" cy="18" r="4.5" fill="#e11d48"/><text x="75" y="22" font-size="10.5" font-weight="700" fill="#e11d48">Raw (ECE 0,1013)</text>';
+  s += '<circle cx="198" cy="18" r="5" fill="#0d9488"/><text x="208" y="22" font-size="10.5" font-weight="700" fill="#0d9488">Calibrated τ=1,24 (ECE 0,0676)</text>';
+  document.getElementById('relSvg').innerHTML = s;
+}
+
+/* ---------------- Bagian 9: Simulator Aturan Keputusan RM-27 ---------------- */
+let simDelta = 0.1;
+const M_REV_DEV = 0.5626710944;
+const M_CONT_DEV = -0.2813355472;
+
+function setDeltaSim(val, btn) {
+  simDelta = val;
+  document.querySelectorAll('#rm27 .pill-bar .pill').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  updateRm27Sim('delta');
+}
+function updateRm27Sim(changed) {
+  const revEl = document.getElementById('pRevSlider');
+  const contEl = document.getElementById('pContSlider');
+  let pRev = Number(revEl.value);
+  let pCont = Number(contEl.value);
+  if (pRev + pCont > 100) {
+    if (changed === 'rev') {
+      pCont = 100 - pRev;
+      contEl.value = pCont;
+    } else {
+      pRev = 100 - pCont;
+      revEl.value = pRev;
+    }
+  }
+  const pNet = 100 - pRev - pCont;
+  document.getElementById('pRevTxt').textContent = pRev + '%';
+  document.getElementById('pContTxt').textContent = pCont + '%';
+  document.getElementById('pNetTxt').textContent = pNet + '%';
+
+  const pr = pRev / 100, pc = pCont / 100, pn = pNet / 100;
+  const eRev = 2.0 * pr - 1.0 * pc + M_REV_DEV * pn;
+  const eCont = -0.5 * eRev;
+  const thrRev = simDelta;
+  const thrCont = -2.0 * simDelta;
+
+  let aksi = 'Abstain', badge = '<span class="pill-abs">ABSTAIN (0R)</span>';
+  if (eRev >= simDelta && eRev > eCont) {
+    aksi = 'Reversal';
+    badge = '<span class="pill-rev">REVERSAL (+2R / −1R)</span>';
+  } else if (eCont >= simDelta && eCont > eRev) {
+    aksi = 'Continuation';
+    badge = '<span class="pill-cont">CONTINUATION (+0,5R / −1R)</span>';
+  }
+
+  // Petakan rentang E_rev [-0.8, +0.8] ke 0%..100%
+  const toPct = v => Math.max(0, Math.min(100, ((v + 0.8) / 1.6) * 100));
+  const contW = toPct(thrCont);
+  const revStart = toPct(thrRev);
+  const absW = Math.max(0, revStart - contW);
+  const revW = Math.max(0, 100 - revStart);
+  const bar = document.getElementById('rm27ZoneBar');
+  bar.style.gridTemplateColumns = contW.toFixed(1) + '% ' + absW.toFixed(1) + '% ' + revW.toFixed(1) + '%';
+  document.getElementById('zContBox').textContent = contW > 18 ? 'Cont (≤ ' + fmt(thrCont, 1) + 'R)' : '';
+  document.getElementById('zAbsBox').textContent = absW > 12 ? 'Abstain' : '';
+  document.getElementById('zRevBox').textContent = revW > 18 ? 'Rev (≥ +' + fmt(thrRev, 1) + 'R)' : '';
+  document.getElementById('rm27Marker').style.left = toPct(eRev).toFixed(1) + '%';
+
+  document.getElementById('rm27Output').innerHTML =
+    '<code>E_rev</code> = <strong>' + (eRev >= 0 ? '+' : '') + fmt(eRev, 4) + 'R</strong> · ' +
+    '<code>E_cont</code> = <strong>' + (eCont >= 0 ? '+' : '') + fmt(eCont, 4) + 'R</strong> · ' +
+    'Rekomendasi (<code>δ = ' + fmt(simDelta, 1) + 'R</code>): ' + badge +
+    (aksi === 'Abstain' ? ' <span style="color:#64748b">(belum melewati ambang keyakinan)</span>' : '');
+}
+
+/* ---------------- Bagian 0: Sorot Interaktif Flow Lengkap ---------------- */
+const flowHints = {
+  all: '<strong>Mode: Semua Alur.</strong> Ikuti dari atas ke bawah: <strong>RM-22</strong> (input) → <strong>RM-24</strong> (<em>walk-forward</em> 250× latih) → <strong>RM-25</strong> (model akhir 5× latih) → <strong>RM-26</strong> (kalibrasi <code>τ</code>, 0× latih) → <strong>RM-27</strong> (aturan keputusan <code>E_rev/E_cont</code>) → <strong>🔒 Kunci-2</strong>.',
+  scaler: '<strong>Sorot — Scaler (z-score):</strong> Di-<code>fit</code> hanya pada 85% data latih (tiap fold di RM-24, lalu sekali pada 1.565 event awal <code>dev</code> di RM-25 → disimpan <code>scaler_L46_h32.json</code>). Di RM-26 &amp; Uji Final hanya <code>transform</code> memakai file beku itu (tidak pernah di-<code>fit</code> ulang!).',
+  seed: '<strong>Sorot — 5 Seed (<code>20261119..20261123</code>):</strong> RM-24 melatih <code>10 konfig × 5 fold × 5 seed = 250×</code> untuk pilih <code>L46_h32</code>. RM-25 melatih ulang <code>1 konfig × 5 seed = 5×</code> → menghasilkan 5 file <code>.pt</code> yang di-<code>eval()</code> bersama di RM-26 &amp; Uji Final.',
+  logits: '<strong>Sorot — Logits &amp; CrossEntropyLoss:</strong> Logits <code>[z_rev, z_cont, z_net]</code> adalah skor mentah dari <code>nn.Linear(32→3)</code>. Saat latih (RM-24/25) masuk <code>CrossEntropyLoss</code>; saat evaluasi (RM-24/26) 5 logits dirata-ratakan jadi <code>mean_logits</code>.',
+  softmax: '<strong>Sorot — Softmax:</strong> Di RM-24 &amp; Early-Stopping memakai <strong>Softmax mentah (<code>τ = 1</code>)</strong>. Mulai RM-26 baru memakai <strong><code>Softmax(mean_logits / τ)</code></strong> dengan <code>τ = 1,237549</code> untuk menghasilkan peluang terkalibrasi <code>p_cal</code>.',
+  ev: '<strong>Sorot — Hitung <code>E_rev / E_cont</code>:</strong> Baru muncul di <strong>RM-27</strong> (memakai <code>p_cal</code> hasil Softmax RM-26 + <code>m_rev = +0,5627R</code> dari Netral <code>dev</code>) untuk menentukan <strong>Reversal / Continuation / Abstain</strong> pada ambang <code>δ = 0,1R</code>.'
+};
+function filterFlow(tag, btn) {
+  document.querySelectorAll('#flowFilterBar .pill').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('flowHint').innerHTML = flowHints[tag];
+  document.querySelectorAll('#flow-lengkap .f-node').forEach(node => {
+    const tags = (node.getAttribute('data-tags') || '').split(' ');
+    if (tag === 'all') {
+      node.classList.remove('hl-on', 'hl-dim');
+    } else if (tags.includes(tag)) {
+      node.classList.add('hl-on');
+      node.classList.remove('hl-dim');
+    } else {
+      node.classList.remove('hl-on');
+      node.classList.add('hl-dim');
+    }
+  });
+}
+
+/* ---------------- Inisialisasi Awal ---------------- */
 setLevelMode('PDH', document.querySelector('#fitur .pill-bar .pill'));
 renderTensor();
 highlightGate(0, document.querySelector('#otak-lstm .pill-bar .pill'));
 updateLogLoss();
 renderSummaryBars();
 renderGrid('all', null);
+updateTauSim();
+renderReliabilitySvg();
+updateRm27Sim('init');
 </script>
 </body>
 </html>
