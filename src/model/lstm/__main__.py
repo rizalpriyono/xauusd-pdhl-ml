@@ -1,0 +1,99 @@
+"""CLI: `python -m model.lstm <tahap> --config configs/<nama>.json`.
+
+Tahap:
+    fitur          tahap 1: 13 fitur sekuensial point-in-time (v2) + uji pemotongan + laporan fitur
+    pembanding     tahap 2: baseline non-model B0/B1 (akhir + OOF walk-forward, identik GB)
+    walk-forward   tahap 3: validasi walk-forward 10 konfigurasi LSTM dan pemilihan konfigurasi
+    semua          fitur -> pembanding -> walk-forward
+
+Sebelum tahap apa pun: berkas Kunci-1 dicek terhadap manifest, a/b/T/k konfigurasi dicek terhadap
+Kunci-1, dan SHA-256 data masukan `runs/<nama>/data/` dicek terhadap `references/<nama>.json`.
+
+Contoh:
+    PYTHONPATH=src python3 -m model.lstm semua --config configs/tesis.json
+    PYTHONPATH=src python3 -m model.lstm fitur --config configs/tesis.json
+Kode keluar: 0 = selesai, 1 = galat (pesan di stderr).
+"""
+import argparse
+import sys
+from pathlib import Path
+
+from pdhl_data.common import TestDataLeak
+from pdhl_data.config import ConfigError, load_config
+from pdhl_data.pipeline import load_reference
+
+from . import fitur, jalur, kunci, laporan_fitur, pembanding, walk_forward
+
+URUTAN = ("fitur", "pembanding", "walk-forward")
+TAHAP = URUTAN + ("semua",)
+GALAT = (kunci.KunciError, jalur.DataInputBerbeda, fitur.AtrKosong, fitur.LookAheadError,
+         TestDataLeak, ConfigError, FileNotFoundError, ModuleNotFoundError, ValueError)
+
+
+def _repo_dir(config_path):
+    return Path(config_path).resolve().parent.parent
+
+
+def _jalankan(tahap, paths, k, sumber, device):
+    if tahap == "fitur":
+        recon = fitur.run_fitur(paths, k, sumber)
+        laporan_fitur.tulis_laporan_fitur(paths)
+        return fitur.ringkas(recon)
+    if tahap == "pembanding":
+        return pembanding.ringkas(pembanding.run_pembanding(paths, k, sumber))
+    return walk_forward.ringkas(walk_forward.run_walk_forward(paths, k, sumber, device=device))
+
+
+def _sumber(args, cfg, paths):
+    """Hash data masukan, dicocokkan dengan acuan. Acuan wajib ada kecuali `--tanpa-acuan`."""
+    ref_path = args.reference or _repo_dir(args.config) / "references" / f"{cfg['name']}.json"
+    reference = load_reference(ref_path)
+    if reference is None:
+        if not args.tanpa_acuan:
+            raise FileNotFoundError(
+                f"acuan {ref_path} tidak ada; data masukan tidak bisa dicek. "
+                "Pakai --tanpa-acuan untuk konfigurasi tanpa acuan reproduksi"
+            )
+        print("[peringatan] --tanpa-acuan: hash data masukan hanya dicatat, tidak dicocokkan",
+              file=sys.stderr)
+    return jalur.info_sumber(jalur.cek_data_input(paths, reference))
+
+
+def jalankan(args):
+    cfg = load_config(args.config)
+    k = kunci.muat_kunci(cfg, args.kunci_dir or kunci.kunci_dir_bawaan(args.config))
+    paths = jalur.model_paths(cfg, args.runs_dir)
+    daftar = URUTAN if args.tahap == "semua" else (args.tahap,)
+    print(f"[config] {cfg['name']}: Kunci-1 cocok dengan manifest ({len(k.manifest_sha256)} berkas), "
+          f"theta B1 = {k.theta}, seeds = {k.seeds[0]}..{k.seeds[-1]}")
+    sumber = _sumber(args, cfg, paths)
+    for tahap in daftar:
+        print(f"[{tahap}]", flush=True)
+        print(_jalankan(tahap, paths, k, sumber, args.device), flush=True)
+    print(f"[selesai] keluaran di {paths.root}")
+    return 0
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser(
+        prog="python -m model.lstm",
+        description="Pemodelan LSTM PDH/PDL XAUUSD H1: fitur sekuensial, baseline B0/B1, walk-forward",
+    )
+    ap.add_argument("tahap", choices=TAHAP)
+    ap.add_argument("--config", required=True, help="configs/<nama>.json")
+    ap.add_argument("--runs-dir", type=Path, default=Path("runs"))
+    ap.add_argument("--kunci-dir", type=Path, help="folder Kunci-1 (bawaan: <folder config>/kunci_1)")
+    ap.add_argument("--reference", type=Path, help="acuan hash data (bawaan references/<nama>.json)")
+    ap.add_argument("--tanpa-acuan", action="store_true",
+                    help="izinkan berjalan bila acuan hash tidak ada (hash hanya dicatat)")
+    ap.add_argument("--device", default="cpu", help="perangkat PyTorch: cpu, mps, atau cuda")
+    args = ap.parse_args(argv)
+    try:
+        return jalankan(args)
+    except GALAT as exc:
+        print(f"[galat] {type(exc).__name__}: {exc}", file=sys.stderr)
+        return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

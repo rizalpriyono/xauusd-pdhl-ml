@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panduan Pemula: Pemodelan LSTM (13 Fitur v2) PDH/PDL XAUUSD H1</title>
+<style>
+  :root {
+    --bg: #f6f8fb;
+    --surface: #ffffff;
+    --ink: #0f172a;
+    --muted: #475569;
+    --line: #e2e8f0;
+    --navy: #1e293b;
+    --teal: #0d9488;
+    --teal-soft: #ccfbf1;
+    --blue: #2563eb;
+    --blue-soft: #dbeafe;
+    --amber: #d97706;
+    --amber-soft: #fef3c7;
+    --rose: #e11d48;
+    --rose-soft: #ffe4e6;
+    --violet: #7c3aed;
+    --violet-soft: #ede9fe;
+    --green: #16a34a;
+    --green-soft: #dcfce7;
+    --radius: 14px;
+    --shadow: 0 4px 18px rgba(15, 23, 42, 0.06);
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.65;
+  }
+  header.hero {
+    background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 55%, #0f766e 100%);
+    color: #fff;
+    padding: 44px 24px 36px;
+  }
+  .hero-inner { max-width: 1140px; margin: 0 auto; }
+  .badge-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+  .badge {
+    font-size: 12px; font-weight: 600; padding: 4px 11px; border-radius: 999px;
+    background: rgba(255,255,255,0.14); border: 1px solid rgba(255,255,255,0.22);
+  }
+  .badge.hl { background: #14b8a6; color: #042f2e; border-color: #2dd4bf; }
+  header.hero h1 { margin: 0 0 10px; font-size: clamp(26px, 4vw, 38px); line-height: 1.2; }
+  header.hero p.lead { margin: 0 0 22px; max-width: 820px; color: #cbd5e1; font-size: 16px; }
+  .kpi-strip {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;
+  }
+  .kpi {
+    background: rgba(255,255,255,0.09); border: 1px solid rgba(255,255,255,0.16);
+    border-radius: 12px; padding: 14px 16px;
+  }
+  .kpi .k-label { font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.6px; color: #94a3b8; }
+  .kpi .k-val { font-size: 24px; font-weight: 800; color: #fff; margin: 2px 0; }
+  .kpi .k-sub { font-size: 12px; color: #99f6e4; }
+
+  nav.top-nav {
+    position: sticky; top: 0; z-index: 40;
+    background: rgba(255,255,255,0.94); backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--line);
+  }
+  .nav-inner {
+    max-width: 1140px; margin: 0 auto; padding: 10px 20px;
+    display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none;
+  }
+  .nav-inner a {
+    text-decoration: none; color: var(--muted); font-size: 13px; font-weight: 600;
+    padding: 6px 12px; border-radius: 8px; white-space: nowrap; transition: 0.15s;
+  }
+  .nav-inner a:hover { background: var(--blue-soft); color: var(--blue); }
+
+  main { max-width: 1140px; margin: 0 auto; padding: 28px 20px 64px; }
+  section.card {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--radius); box-shadow: var(--shadow);
+    padding: 28px; margin-bottom: 24px;
+  }
+  .sec-tag {
+    display: inline-block; font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.8px; color: var(--teal); background: var(--teal-soft);
+    padding: 3px 10px; border-radius: 999px; margin-bottom: 8px;
+  }
+  section.card h2 { margin: 0 0 8px; font-size: 23px; color: var(--navy); }
+  section.card p.intro { margin: 0 0 18px; color: var(--muted); }
+
+  .callout {
+    border-left: 4px solid var(--teal); background: #f0fdfa;
+    padding: 14px 16px; border-radius: 0 10px 10px 0; margin: 16px 0; font-size: 14.5px;
+  }
+  .callout.amber { border-color: var(--amber); background: #fffbeb; }
+  .callout.blue { border-color: var(--blue); background: #eff6ff; }
+  .callout.green { border-color: var(--green); background: #f0fdf4; }
+  .callout strong { color: var(--navy); }
+
+  .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
+  .mini-box {
+    border: 1px solid var(--line); border-radius: 12px; padding: 16px; background: #fcfdff;
+  }
+  .mini-box h3 { margin: 0 0 6px; font-size: 16px; color: var(--navy); }
+  .mini-box p { margin: 0; font-size: 14px; color: var(--muted); }
+
+  .flow-row {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; margin: 16px 0;
+  }
+  .step-box {
+    border: 1px solid var(--line); border-radius: 12px; padding: 15px; background: #fff;
+    border-top: 4px solid var(--blue);
+  }
+  .step-box.teal { border-top-color: var(--teal); }
+  .step-box.amber { border-top-color: var(--amber); }
+  .step-box.rose { border-top-color: var(--rose); }
+  .step-num { font-size: 11px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; }
+  .step-box h4 { margin: 4px 0 6px; font-size: 15px; }
+  .step-box p { margin: 0; font-size: 13.5px; color: var(--muted); }
+
+  .table-wrap { overflow-x: auto; margin: 14px 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th, td { padding: 9px 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+  th { background: #f8fafc; font-weight: 700; color: var(--navy); white-space: nowrap; }
+  tr.win { background: #f0fdfa; font-weight: 700; }
+  tr.win td { color: #0f766e; }
+  tr.new-feat { background: #f8fafc; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  code {
+    background: #f1f5f9; padding: 2px 6px; border-radius: 5px; font-size: 12.2px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: #0f172a;
+  }
+  .tag-new {
+    display: inline-block; font-size: 10px; font-weight: 800; padding: 1px 6px; border-radius: 999px;
+    background: var(--teal-soft); color: #0f766e; margin-left: 4px; vertical-align: middle;
+  }
+
+  .pill-bar { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 16px; }
+  button.pill {
+    cursor: pointer; border: 1px solid var(--line); background: #fff; color: var(--navy);
+    font-size: 13px; font-weight: 600; padding: 7px 14px; border-radius: 999px; transition: 0.15s;
+  }
+  button.pill:hover { border-color: var(--teal); color: var(--teal); }
+  button.pill.active { background: var(--teal); color: #fff; border-color: var(--teal); }
+
+  .sim-panel {
+    background: #f8fafc; border: 1px solid var(--line); border-radius: 12px; padding: 18px; margin-top: 12px;
+  }
+  .slider-row { display: flex; align-items: center; gap: 12px; margin: 10px 0; flex-wrap: wrap; }
+  .slider-row label { min-width: 170px; font-size: 13.5px; font-weight: 600; }
+  .slider-row input[type=range] { flex: 1; min-width: 160px; accent-color: var(--teal); }
+  .slider-row .val {
+    min-width: 66px; text-align: right; font-weight: 700; font-variant-numeric: tabular-nums;
+    background: #fff; border: 1px solid var(--line); padding: 3px 8px; border-radius: 6px;
+  }
+
+  .gate-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin: 14px 0; }
+  .gate-card {
+    border: 2px solid var(--line); border-radius: 12px; padding: 14px; background: #fff; transition: 0.2s;
+  }
+  .gate-card.active { border-color: var(--teal); background: #f0fdfa; transform: translateY(-2px); }
+  .gate-card h4 { margin: 0 0 6px; font-size: 15px; }
+  .gate-card p { margin: 0; font-size: 13.5px; color: var(--muted); }
+
+  .bar-row { display: flex; align-items: center; gap: 10px; margin: 7px 0; font-size: 13px; }
+  .bar-label { width: 152px; font-weight: 600; flex-shrink: 0; }
+  .bar-track { flex: 1; background: #e2e8f0; height: 22px; border-radius: 6px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 6px; transition: width 0.35s ease; }
+  .bar-num { width: 62px; text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+  .tensor-grid { display: grid; grid-template-columns: repeat(13, 1fr); gap: 3px; margin-top: 8px; min-width: 640px; }
+  .t-cell {
+    height: 26px; border-radius: 4px; display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 700; color: #0f172a;
+  }
+
+  .gloss-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+  .gloss-item { border: 1px solid var(--line); border-radius: 10px; padding: 13px 15px; background: #fff; }
+  .gloss-item dt { font-weight: 800; color: var(--navy); font-size: 14.5px; margin-bottom: 4px; }
+  .gloss-item dd { margin: 0; font-size: 13.5px; color: var(--muted); }
+
+  .roadmap-list { display: flex; flex-direction: column; gap: 10px; margin: 16px 0; }
+  .rm-item {
+    display: flex; align-items: flex-start; gap: 14px; padding: 12px 16px;
+    border: 1px solid var(--line); border-radius: 11px; background: #fff;
+  }
+  .rm-item.done { border-left: 5px solid var(--green); background: #f0fdf4; }
+  .rm-item.now { border-left: 5px solid var(--teal); background: #f0fdfa; border-color: #99f6e4; }
+  .rm-item.next { border-left: 5px solid var(--blue); background: #eff6ff; }
+  .rm-item.focus { border-left: 5px solid var(--amber); background: #fffbeb; border-color: #fde68a; }
+  .rm-item.lock { border-left: 5px solid var(--rose); background: #fff1f2; border-color: #fecdd3; }
+  .rm-badge {
+    min-width: 118px; font-size: 12px; font-weight: 800; padding: 4px 10px;
+    border-radius: 999px; text-align: center; background: #fff; border: 1px solid var(--line);
+    color: var(--navy); flex-shrink: 0;
+  }
+  .rm-body strong { color: var(--navy); font-size: 14.5px; }
+  .rm-body p { margin: 2px 0 0; font-size: 13.5px; color: var(--muted); }
+  .mini-calc {
+    background: #0f172a; color: #e2e8f0; border-radius: 12px; padding: 16px 18px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.8px; line-height: 1.6;
+    overflow-x: auto; margin: 12px 0;
+  }
+  .mini-calc .hl { color: #5eead4; font-weight: 700; }
+  .mini-calc .warn { color: #fcd34d; font-weight: 700; }
+
+  footer { text-align: center; font-size: 13px; color: var(--muted); margin-top: 24px; }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="hero-inner">
+    <div class="badge-row">
+      <span class="badge hl">Panduan Interaktif Pemula ML · v2 (13 Fitur)</span>
+      <span class="badge">xauusd-pdhl-ml · Pipeline v1.1.0</span>
+      <span class="badge">src/model/lstm/ (Tahap 1–3)</span>
+      <span class="badge">Kunci Uji 2025–2026 Tetap Disegel</span>
+    </div>
+    <h1>Memahami Pemodelan LSTM (13 Fitur v2) pada XAUUSD H1 PDH/PDL</h1>
+    <p class="lead">
+      Panduan visual lengkap yang membedah alur proyek <code>pdhl_data</code>, model rekan Anda (<strong>Gradient Boosting</strong>),
+      dan model <strong>LSTM v2 (13 fitur <em>theory-driven</em>)</strong> beserta arti setiap singkatan fitur, tujuan, dan hasil eksperimen riilnya.
+    </p>
+    <div class="kpi-strip">
+      <div class="kpi">
+        <div class="k-label">Model LSTM Terpilih</div>
+        <div class="k-val">L46_h32</div>
+        <div class="k-sub">2 sesi penuh (46 jam) · 32 unit</div>
+      </div>
+      <div class="kpi">
+        <div class="k-label">OOF Log-Loss (2019–2023)</div>
+        <div class="k-val">0,9185</div>
+        <div class="k-sub">−0,0513 vs B0 · −0,0048 vs GB!</div>
+      </div>
+      <div class="kpi">
+        <div class="k-label">Parity Baseline B0/B1</div>
+        <div class="k-val">100% Sama</div>
+        <div class="k-sub">SHA-256 identik dgn GB</div>
+      </div>
+      <div class="kpi">
+        <div class="k-label">Audit &amp; Unit Test</div>
+        <div class="k-val">256 / 256 OK</div>
+        <div class="k-sub">Uji pemotongan L=96: 0 beda</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<nav class="top-nav" aria-label="Navigasi bagian">
+  <div class="nav-inner">
+    <a href="#peta">1. Peta Proyek</a>
+    <a href="#gb-vs-lstm">2. GB vs LSTM</a>
+    <a href="#fitur">3. 13 Fitur &amp; Arti Singkatan</a>
+    <a href="#otak-lstm">4. Otak LSTM &amp; Early Stop</a>
+    <a href="#walk-forward">5. Walk-Forward &amp; Log-Loss</a>
+    <a href="#hasil">6. Hasil Riil v2</a>
+    <a href="#glosarium">7. Glosarium &amp; Tahap Berikutnya</a>
+  </div>
+</nav>
+
+<main>
+
+<!-- SECTION 1 -->
+<section class="card" id="peta">
+  <span class="sec-tag">Bagian 1 · Pondasi Data</span>
+  <h2>Peta Besar Proyek <code>xauusd-pdhl-ml</code> (<code>pdhl_data</code> v1.1.0)</h2>
+  <p class="intro">
+    Sebelum model AI belajar, data mentah dibersihkan, dibagi menurut waktu, dan diberi label <em>triple barrier</em> secara ketat agar tidak ada kebocoran masa depan.
+  </p>
+
+  <div class="flow-row">
+    <div class="step-box">
+      <div class="step-num">Langkah 1 · events.py</div>
+      <h4>Data Mentah → Event PDH/PDL</h4>
+      <p>100.000 bar mentah H1 (dengan pemanasan ATR pra-2015 v1.1.0) disaring menjadi <strong>68.436 bar silver</strong>, <strong>2.988 sesi</strong> (23 bar aktif/sesi), dan <strong>2.409 event valid</strong>.</p>
+    </div>
+    <div class="step-box teal">
+      <div class="step-num">Langkah 2 · split.py</div>
+      <h4>Bagi Waktu &amp; Segel Uji</h4>
+      <p>Dipisah kronologis: <strong>dev</strong> 2016–2023 (1.841), <strong>calib</strong> 2024 (227), dan <strong>kunci_uji</strong> Jan 2025–Jul 2026 (341, <em>read-only</em> + SHA-256).</p>
+    </div>
+    <div class="step-box amber">
+      <div class="step-num">Langkah 3 · labels.py</div>
+      <h4>Label Triple Barrier</h4>
+      <p>Kunci-1: <code>a=2, b=1, T=8, k=0</code>. Dalam 8 jam setelah sentuhan: kena +2 ATR dulu = <strong>Reversal</strong>, −1 ATR = <strong>Continuation</strong>, tidak keduanya = <strong>Netral</strong>.</p>
+    </div>
+    <div class="step-box rose">
+      <div class="step-num">Langkah 4 · Kunci-1</div>
+      <h4>Segel Reproduksi</h4>
+      <p>Verifikasi <code>pdhl_data verify</code> wajib <strong>19/19 OK</strong>. Semua kode model wajib lewat <code>load_model_csv</code> yang menolak data uji (<code>TestDataLeak</code>).</p>
+    </div>
+  </div>
+
+  <div class="callout">
+    <strong>Analogi Sekolah:</strong> Data <code>dev</code> (2016–2023) = <em>buku latihan &amp; try out</em>; <code>calib</code> (2024) = <em>setel kepercayaan diri</em> model; <code>kunci_uji</code> (2025–2026) = <em>ujian nasional</em> yang masih disegel dan baru dibuka sekali di akhir (Kunci-2).
+  </div>
+
+  <div class="callout blue">
+    <strong>Ke Mana Tahun 2015 &amp; Bagaimana Pemanasan ATR (Adendum v1.1.0)?</strong><br>
+    Bar pra-2015 (2009–2014) dipakai dulu untuk memanaskan rumus <strong>Wilder ATR(14)</strong> &amp; <strong>PDH/PDL</strong> lalu dipotong, sehingga sejak <code>bar_idx = 0</code> (1 Jan 2015) <strong>tidak ada lagi nilai kosong</strong>. Tahun <strong>2015</strong> tetap disimpan di <code>bars_devcalib.csv</code> sebagai <strong>gudang candle riwayat</strong> (untuk <em>lookback</em> <code>L</code> dan indikator <em>rolling</em> <code>EMA50</code>/<code>ATR120</code>/volume 20 sesi bagi event awal Januari 2016), tetapi <strong>event 2015 sengaja = 0</strong>. Baik <strong>Gradient Boosting</strong> maupun <strong>LSTM</strong> sama-sama memulai event penelitian pada <strong>Januari 2016</strong>.
+  </div>
+</section>
+
+<!-- SECTION 2 -->
+<section class="card" id="gb-vs-lstm">
+  <span class="sec-tag">Bagian 2 · Arsitektur Sejajar</span>
+  <h2>Analisis Model Teman (Gradient Boosting) vs Model Anda (LSTM v2)</h2>
+  <p class="intro">
+    Di folder <code>src/model/</code> kini ada dua subpaket sejajar secara <strong>apple-to-apple</strong>: <code>gradient_boosting/</code> (LightGBM) dan <code>lstm/</code> (PyTorch LSTM).
+  </p>
+
+  <div class="grid-2">
+    <div class="mini-box" style="border-top:4px solid var(--blue)">
+      <h3>🌳 Jalur Teman: <code>src/model/gradient_boosting/</code></h3>
+      <p style="margin-bottom:10px">Menggunakan <strong>LightGBM</strong> (pohon keputusan) yang membaca <strong>tabel 2D</strong> (1 foto snapshot di bar <code>t*</code>).</p>
+      <ul style="margin:0;padding-left:18px;font-size:13.5px;color:var(--muted)">
+        <li><strong>Tahap 1 (<code>fitur</code>):</strong> 15 fitur tabular pada <code>t*</code> (12 dasar Proposal + 3 kuesioner).</li>
+        <li><strong>Tahap 2 (<code>pembanding</code>):</strong> Baseline <strong>B0</strong> (0,9698) &amp; <strong>B1 wick ≥ 2/3</strong> (0,9678).</li>
+        <li><strong>Tahap 3 (<code>walk-forward</code>):</strong> 8 konfigurasi pohon × 5 tahun OOF. Terpilih: <code>d2_n100_m50</code> (<strong>0,9233</strong>).</li>
+      </ul>
+    </div>
+    <div class="mini-box" style="border-top:4px solid var(--teal)">
+      <h3>🧠 Jalur Anda: <code>src/model/lstm/</code></h3>
+      <p style="margin-bottom:10px">Menggunakan <strong>LSTM PyTorch</strong> yang membaca <strong>urutan waktu 3D</strong> (rekaman video <code>L</code> jam terakhir).</p>
+      <ul style="margin:0;padding-left:18px;font-size:13.5px;color:var(--muted)">
+        <li><strong>Tahap 1 (<code>fitur</code> v2):</strong> 13 fitur per candle (harga, tren EMA50, rezim ATR120, volume jam-sama, jam &amp; hari siklik) + <code>uji_pemotongan</code> 0 beda.</li>
+        <li><strong>Tahap 2 (<code>pembanding</code>):</strong> B0 &amp; B1 — <strong>SHA-256 100% identik</strong> dengan GB (<code>295010275517ebb1…</code>)!</li>
+        <li><strong>Tahap 3 (<code>walk-forward</code>):</strong> 10 konfigurasi × 5 tahun × 5 seed Kunci-1. Terpilih: <code>L46_h32</code> (<strong>0,9185</strong>).</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 3 -->
+<section class="card" id="fitur">
+  <span class="sec-tag">Bagian 3 · Tahap 1 (RM-22 v2)</span>
+  <h2>13 Fitur Sekuensial v2: Arti Singkatan, Fungsi, &amp; Tensor 3D <code>(N, L, 13)</code></h2>
+  <p class="intro">
+    Ke-13 fitur ini diturunkan langsung dari <strong>Proposal Tabel 4.5</strong>, <strong>Kuesioner RQ1</strong> (tren H1 median 5, volatilitas ATR median 4, wick penolakan 5/9), dan <strong>Selected Papers</strong> (Grądzki 2025, Jankowski 2026, Enkhbayar 2025, Moser 2026, Sokolovsky 2023).
+  </p>
+
+  <div class="pill-bar">
+    <button class="pill active" onclick="setLevelMode('PDH', this)">Simulasi PDH (d = +1, Harga Naik ke Atap)</button>
+    <button class="pill" onclick="setLevelMode('PDL', this)">Simulasi PDL (d = −1, Harga Turun ke Lantai)</button>
+  </div>
+
+  <div class="sim-panel">
+    <div class="grid-2" style="align-items:center">
+      <div>
+        <svg id="candleSvg" viewBox="0 0 360 190" width="100%" style="background:#fff;border:1px solid var(--line);border-radius:10px"></svg>
+      </div>
+      <div id="candleExplain" style="font-size:13.8px"></div>
+    </div>
+  </div>
+
+  <h3 style="margin:22px 0 8px;font-size:16.5px">Kamus Lengkap 13 Fitur Per-Candle (Kode, Singkatan, Fungsi, &amp; Sumber)</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Kode</th><th>Nama Fitur</th><th>Arti Singkatan</th><th>Untuk Apa (Penjelasan Pemula)</th><th>Sumber</th><th>Scaler</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>s01</code></td><td><code>dist_level_dir</code></td><td><em>distance to level, directional</em></td><td>Jarak <em>close</em> bar ke garis PDH/PDL (dibagi <code>ATR_t*</code>): positif = sudah menembus level.</td><td>Proposal <code>f09</code>, K1/K4, Sokolovsky</td><td>z-score</td></tr>
+        <tr><td><code>s02</code></td><td><code>body_dir</code></td><td><em>candle body, directional</em></td><td>Panjang &amp; arah badan candle (<code>close − open</code>). Urutan 2 bar menangkap pola <em>engulfing</em>.</td><td>Proposal <code>f14</code>, K3, Moser 2026</td><td>z-score</td></tr>
+        <tr><td><code>s03</code></td><td><code>range_atr</code></td><td><em>candle range per ATR</em></td><td>Tinggi total 1 candle (<code>high − low</code>) dibanding rata-rata normal <code>ATR_t*</code>.</td><td>Moser 2026</td><td>z-score</td></tr>
+        <tr><td><code>s04</code></td><td><code>wick_against_dir</code></td><td><em>wick against direction</em></td><td>Sumbu yang <strong>menolak level</strong> (atas di PDH, bawah di PDL) — sinyal #1 pantulan/<em>reversal</em>.</td><td>Proposal <code>f13/f10</code>, K2 (<strong>5/9</strong>)</td><td>z-score</td></tr>
+        <tr><td><code>s05</code></td><td><code>wick_with_dir</code></td><td><em>wick with direction</em></td><td>Sumbu dorongan searah menembus level (pasangan simetris <code>s04</code>).</td><td>Moser 2026</td><td>z-score</td></tr>
+        <tr class="new-feat"><td><code>s06</code></td><td><code>dist_ema50_dir</code><span class="tag-new">v2</span></td><td><em>distance to EMA(50), directional</em></td><td>Jarak harga ke <strong>EMA 50 jam</strong>: memberi tahu LSTM arah <strong>tren H1</strong> melampaui jendela <code>L</code>.</td><td>Proposal <code>f11</code>, 3.6 (<strong>med 5</strong>), Grądzki/Jankowski</td><td>z-score</td></tr>
+        <tr class="new-feat"><td><code>s07</code></td><td><code>vol_regime</code><span class="tag-new">v2</span></td><td><em>volatility regime</em></td><td><code>ATR_i / rata-rata ATR 120 bar</code>: pasar sedang lebih liar (&gt;1) atau tenang (&lt;1) dibanding 5 hari terakhir.</td><td>Proposal <code>f06</code>, 3.7 (<strong>med 4</strong>), Enkhbayar</td><td>z-score</td></tr>
+        <tr class="new-feat"><td><code>s08</code></td><td><code>log_vol_rel_hour</code><span class="tag-new">v2</span></td><td><em>log relative volume (same NY hour)</em></td><td><code>ln(volume / rata-rata 20 sesi di jam NY sama)</code>: deteksi lonjakan volume tanpa bias Asia sepi vs NY ramai.</td><td>Proposal <code>f15</code>, K7 (3/9), Sokolovsky</td><td>z-score</td></tr>
+        <tr><td><code>s09</code></td><td><code>ny_hour_sin</code></td><td><em>New York hour, sine</em></td><td>Gelombang sinus jam New York (0–23) agar jam 23:00 nyambung dengan 00:00 (sesi Asia/London/NY).</td><td>Proposal <code>f04/f08</code>, K9, Grądzki</td><td>Skip (−1..1)</td></tr>
+        <tr><td><code>s10</code></td><td><code>ny_hour_cos</code></td><td><em>New York hour, cosine</em></td><td>Pasangan kosinus jam New York agar tiap jam punya koordinat unik di lingkaran.</td><td>Grądzki 2025</td><td>Skip (−1..1)</td></tr>
+        <tr class="new-feat"><td><code>s11</code></td><td><code>weekday_sin</code><span class="tag-new">v2</span></td><td><em>trading weekday, sine</em></td><td>Gelombang sinus hari perdagangan (Senin=0 s.d. Jumat=4) — efek awal vs akhir pekan berbeda.</td><td>Proposal <code>f05</code>, Grądzki 2025</td><td>Skip (−1..1)</td></tr>
+        <tr class="new-feat"><td><code>s12</code></td><td><code>weekday_cos</code><span class="tag-new">v2</span></td><td><em>trading weekday, cosine</em></td><td>Pasangan kosinus hari perdagangan pada rentang <code>[-1, 1]</code>.</td><td>Grądzki 2025</td><td>Skip (−1..1)</td></tr>
+        <tr><td><code>s13</code></td><td><code>log_gap_h</code></td><td><em>log gap in hours</em></td><td><code>ln(1 + jeda jam)</code>: menandai jeda harian 2 jam (17:00 NY) dan jeda akhir pekan (&gt;48 jam).</td><td>Teknis H1</td><td>z-score</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout green">
+    <strong>Hasil Audit Kualitas Fitur v2:</strong> Membuang <code>ret_dir</code> (dulu berkorelasi <code>r = 0,99</code> dengan <code>body_dir</code>) dan memakai volume relatif jam-sama menurunkan korelasi volume vs jam dari <code>−0,47 → −0,03</code>. Hasilnya, OOF Log-Loss LSTM langsung membaik tajam dari <strong>0,9271 → 0,9185</strong>!
+  </div>
+
+  <div class="sim-panel">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      <strong>Visualisasi Mini 1 Event di Tensor 3D (6 bar terakhir menuju <code>t*</code> × 13 fitur)</strong>
+      <button class="pill" id="scaleToggleBtn" onclick="toggleScale()">Mode: Angka Mentah (Klik untuk lihat hasil SequenceScaler3D)</button>
+    </div>
+    <div style="overflow-x:auto"><div id="tensorBox" style="margin-top:10px"></div></div>
+    <p style="margin:10px 0 0;font-size:12.5px;color:var(--muted)">
+      Perhatikan 4 kolom bertanda bintang <strong>s09*–s12*</strong> (<code>ny_hour_sin/cos</code> &amp; <code>weekday_sin/cos</code>) dilewati oleh <code>SequenceScaler3D</code> karena sudah rapi di <code>[-1, 1]</code>, sedangkan 9 fitur lain di-z-score hanya memakai statistik <strong>data latih</strong>.
+    </p>
+  </div>
+
+  <h3 style="margin:22px 0 8px;font-size:16.5px">Breakdown Tensor 3D <code>(N, L, 13)</code> &amp; Beda "Bentuk Fitur" vs "Train Model"</h3>
+  <div class="grid-2">
+    <div class="mini-box">
+      <h3>📦 Arti 3 Angka di <code>(N, L, 13)</code></h3>
+      <ul style="margin:6px 0 0;padding-left:18px;font-size:13.5px;color:var(--muted)">
+        <li><strong><code>N</code> (Jumlah lembar event):</strong> <code>1.841</code> di <code>dev</code> (2016–2023), <code>689</code> di latih Fold 1 (2016–2018), <code>227</code> di val 2019 &amp; <code>calib</code> 2024. <em>(2015 = 0 lembar, hanya gudang candle riwayat.)</em></li>
+        <li><strong><code>L</code> (Baris jam ke belakang):</strong> karena di awal belum tahu panjang terbaik, kelima kandidat <code>L ∈ {23, 40, 46, 60, 96}</code> <strong>dicoba satu per satu</strong> di Walk-Forward (menang: <strong><code>L = 46</code></strong> = 2 sesi penuh).</li>
+        <li><strong><code>13</code> (Kolom fitur per jam):</strong> <code>s01..s13</code>. Jadi 1 lembar event berukuran <code>46 × 13 = 598 angka</code>.</li>
+      </ul>
+    </div>
+    <div class="mini-box">
+      <h3>⚙️ Beda "Bentuk Fitur" vs "Scaling &amp; Train"</h3>
+      <ul style="margin:6px 0 0;padding-left:18px;font-size:13.5px;color:var(--muted)">
+        <li><strong>1. Bentuk Fitur (1× di awal untuk 1.841 event):</strong> murni rumus matematika per event (belum ada LSTM/belajar). Aman dihitung sekaligus karena tiap event hanya melihat candle miliknya ke belakang (<code>≤ t*</code>).</li>
+        <li><strong>2. Scaling (ulang di tiap Fold):</strong> <code>SequenceScaler3D</code> wajib di-<code>fit</code> ulang hanya pada 85% data latih fold itu agar statistik tahun depan tidak bocor.</li>
+        <li><strong>3. Train Model (ulang di tiap Fold, per <code>batch = 64</code>):</strong> LSTM belajar memperbaiki bobot dari 64 lembar demi 64 lembar.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 4 -->
+<section class="card" id="otak-lstm">
+  <span class="sec-tag">Bagian 4 · Cara Kerja Model</span>
+  <h2>Cara Kerja Otak LSTM &amp; 3 Rem Anti-Hafalan (<em>Overfitting</em>)</h2>
+  <p class="intro">
+    LSTM membaca 46 bar terakhir (2 sesi penuh XAUUSD: seluruh sesi kemarin + sesi hari ini hingga <code>t*</code>) satu per satu sambil membawa memori. Klik tombol di bawah untuk melihat peran 3 gerbangnya:
+  </p>
+
+  <div class="pill-bar">
+    <button class="pill active" onclick="highlightGate(0, this)">1. Forget Gate (Gerbang Lupa)</button>
+    <button class="pill" onclick="highlightGate(1, this)">2. Input Gate (Gerbang Simpan)</button>
+    <button class="pill" onclick="highlightGate(2, this)">3. Output Gate (Gerbang Kesimpulan)</button>
+  </div>
+  <div class="gate-grid" id="gateGrid">
+    <div class="gate-card active">
+      <h4>🧹 1. Forget Gate</h4>
+      <p>Membuang ingatan lama yang sudah basi (misalnya fluktuasi kecil di awal sesi kemarin yang tidak relevan lagi dengan kondisi saat menyentuh level).</p>
+    </div>
+    <div class="gate-card">
+      <h4>📝 2. Input Gate</h4>
+      <p>Menyimpan informasi penting dari candle saat ini (misalnya harga menjauh dari EMA50, volatilitas meningkat, muncul <em>wick</em> penolakan + lonjakan volume jam-sama).</p>
+    </div>
+    <div class="gate-card">
+      <h4>🎯 3. Output Gate → Linear(3)</h4>
+      <p>Di bar terakhir <code>t*</code>, ringkasan memori <code>h_T</code> (32 angka) dilewatkan <code>Dropout(0,3)</code> lalu <code>Linear(3)</code> → 3 <em>logits</em> → <strong>Rev, Cont, Netral</strong>.</p>
+    </div>
+  </div>
+  <div class="callout blue" id="gateDetail"></div>
+
+  <h3 style="margin:20px 0 8px;font-size:16.5px">3 Rem Anti-Overfitting di <code>arsitektur.py</code></h3>
+  <div class="grid-3">
+    <div class="mini-box">
+      <h3>🎲 1. Dropout (30%)</h3>
+      <p>30% neuron dimatikan acak di tiap batch saat training agar LSTM tidak bergantung pada satu jalur hafalan saja.</p>
+    </div>
+    <div class="mini-box">
+      <h3>🛑 2. Early Stopping (85% / 15%)</h3>
+      <p>Data latih dibelah kronologis: <strong>85% awal</strong> untuk update bobot, <strong>15% ujung</strong> untuk cek Log-Loss tiap epoch (<em>patience</em> = 12). Untuk <code>L46_h32</code>, bobot terbaik ketemu di rata-rata <strong>epoch 14,6</strong> tanpa pernah mengintip tahun ujian.</p>
+    </div>
+    <div class="mini-box">
+      <h3>🌱 3. Ensemble 5 Seed Kunci-1</h3>
+      <p>Setiap konfigurasi dilatih 5 kali (seed <code>20261119..20261123</code>, <code>num_threads = 1</code>), lalu <em>logits</em> dirata-rata agar hasil stabil &amp; 100% deterministik.</p>
+    </div>
+  </div>
+
+  <h3 style="margin:22px 0 8px;font-size:16.5px">🧪 Studi Kasus Mini PyTorch (Bisa Dihitung di Kepala!) &amp; Alur 85% vs 15%</h3>
+  <p style="margin:0 0 10px;font-size:14px;color:var(--muted)">
+    Mesin inti LSTM memakai library jadi <strong>PyTorch</strong> (<code>nn.LSTM</code>, <code>nn.Dropout</code>, <code>nn.Linear</code>, <code>CrossEntropyLoss</code>, <code>AdamW</code>). Agar langsung paham alurnya, bayangkan versi mini: <strong>1 event PDH</strong>, <strong><code>L = 2</code> jam</strong>, <strong>2 fitur</strong> (<code>f1</code> = badan dorong, <code>f2</code> = ekor penolakan), <strong><code>hidden = 2</code></strong> (<code>h1</code> = ingatan dorong, <code>h2</code> = ingatan tolak), label asli = <strong>Reversal</strong>:
+  </p>
+  <div class="mini-calc">
+<span class="hl">1. Input (1 × 2 × 2):</span>   Jam 1 = [f1=+2, f2=0] (naik kuat)  →  Jam 2 (t*) = [f1=−1, f2=+3] (ditolak keras!)
+<span class="hl">2. nn.LSTM baca 2 jam:</span>  Awal [0,0] → Jam 1 [+2, 0] → Jam 2: Forget 50% (+2×0,5 − 1 = 0), Input tolak (+3) → <span class="warn">h_T = [0, +3]</span>
+<span class="hl">3. nn.Dropout(0,3):</span>     Saat evaluasi tidak ada yang dimatikan → tetap [0, +3]
+<span class="hl">4. nn.Linear(2 → 3):</span>    Rev = (−1·0 + 1·3) = <span class="warn">+3</span> | Cont = (1·0 − 1·3) = −3 | Net = 0  →  <span class="warn">Logits = [+3, −3, 0]</span>
+<span class="hl">5. Softmax (Σ = 100%):</span>  e³≈20, e⁻³≈0,05, e⁰=1 (total≈21)  →  <span class="warn">Rev 95% · Cont 0,2% · Net 4,8%</span>
+<span class="hl">6. Belajar (85% saja!):</span> Jika salah (misal tebak Rev cuma 10%), Loss = −ln(0,10) = 2,30 → <span class="warn">loss.backward() + AdamW</span> naikkan bobot!
+  </div>
+
+  <div class="grid-2" style="margin-top:14px">
+    <div class="mini-box" style="border-top:4px solid var(--amber)">
+      <h3>🔁 Alur Epoch: 85% Latih vs 15% Early Stopping</h3>
+      <ul style="margin:6px 0 0;padding-left:18px;font-size:13.5px;color:var(--muted)">
+        <li><strong>Output latih (85%) rupanya apa?</strong> Bukan CSV prediksi, melainkan <strong>ribuan bobot terlatih (<code>state_dict</code> / file <code>.pt</code>)</strong> + <code>scaler</code>.</li>
+        <li><strong>85% awal data latih:</strong> tempat bobot <strong>diubah</strong> (<code>backward()</code> + <code>AdamW</code>).</li>
+        <li><strong>15% akhir data latih:</strong> pengawas tanpa ubah bobot (<em>bukan 2024 dan bukan tahun ujian OOF!</em>).</li>
+        <li><strong>Siklus (maks 80 epoch, <code>patience = 12</code>):</strong> belajar 1 putaran 85% → cek 15% → rekor baru? simpan bobot &amp; lanjut → 12× berturut-turut tidak membaik? <strong>STOP</strong> &amp; kembalikan bobot terbaik (~Epoch 14,6).</li>
+      </ul>
+    </div>
+    <div class="mini-box" style="border-top:4px solid var(--teal)">
+      <h3>🌱 Kenapa 5 Seed (<code>20261119..20261123</code>), Bukan 1 Seed?</h3>
+      <ul style="margin:6px 0 0;padding-left:18px;font-size:13.5px;color:var(--muted)">
+        <li><strong>Tidak masuk ke rumus:</strong> angka <code>20261119</code> tidak dikali/dibagi ke fitur/ATR — hanya kode pengunci 3 keacakan (bobot awal, <em>shuffle</em> batch 64, pola <em>dropout</em>).</li>
+        <li><strong>Dijalankan otomatis 5×:</strong> 10 konfigurasi × 5 fold × 5 seed = <strong>250× latih otomatis</strong>, lalu 5 logits dirata-ratakan sebelum <code>Softmax</code>.</li>
+        <li><strong>Kenapa bukan 1 seed?</strong> Selisih Peringkat #1 (<code>0,9185</code>) vs #2 (<code>0,9186</code>) hanya <code>0,0001</code>, jauh lebih kecil dari variasi acak 1 seed! Dengan 5 seed, faktor hoki/apes saling meniadakan dan hasil tahan kritik penguji.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 5 -->
+<section class="card" id="walk-forward">
+  <span class="sec-tag">Bagian 5 · Tahap 2 &amp; 3 (RM-23 &amp; RM-24)</span>
+  <h2>Walk-Forward 2019–2023, Purging, &amp; Simulator Log-Loss</h2>
+  <p class="intro">
+    Validasi memakai <strong>5 lipatan maju (<em>Expanding Walk-Forward</em>)</strong> dengan <em>purging</em> lintas tahun agar masa depan tidak pernah bocor ke data latih:
+  </p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Lipatan</th><th>Data Latih (85% train + 15% early stop)</th><th class="num">n Latih</th><th class="num">Purged</th><th>Tahun Ujian (OOF)</th><th class="num">n Val</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Fold 1</td><td>2016 – 2018</td><td class="num">689</td><td class="num">0</td><td><strong>2019</strong></td><td class="num">227</td></tr>
+        <tr><td>Fold 2</td><td>2016 – 2019</td><td class="num">916</td><td class="num">0</td><td><strong>2020</strong></td><td class="num">227</td></tr>
+        <tr><td>Fold 3</td><td>2016 – 2020</td><td class="num">1.143</td><td class="num">0</td><td><strong>2021</strong></td><td class="num">236</td></tr>
+        <tr><td>Fold 4</td><td>2016 – 2021</td><td class="num">1.379</td><td class="num">0</td><td><strong>2022</strong></td><td class="num">236</td></tr>
+        <tr><td>Fold 5</td><td>2016 – 2022</td><td class="num">1.615</td><td class="num">0</td><td><strong>2023</strong></td><td class="num">226</td></tr>
+        <tr class="win"><td colspan="4">Gabungan OOF (Out-of-Fold) 2019–2023 — Dasar Pemilihan Konfigurasi</td><td>Total OOF</td><td class="num">1.152</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="sim-panel">
+    <h3 style="margin:0 0 6px;font-size:16px">🧮 Simulator Log-Loss Interaktif</h3>
+    <p style="margin:0 0 12px;font-size:13.5px;color:var(--muted)">
+      Misalkan label asli suatu event adalah <strong>Reversal</strong>. Geser seberapa besar peluang <code>p(Reversal)</code> yang ditebak model:
+    </p>
+    <div class="slider-row">
+      <label for="llSlider">Peluang tebakan <code>p(Reversal)</code>:</label>
+      <input type="range" id="llSlider" min="5" max="95" value="55" oninput="updateLogLoss()">
+      <span class="val" id="llProbTxt">0,55</span>
+    </div>
+    <div id="llResult" style="margin-top:8px;font-size:14px"></div>
+  </div>
+</section>
+
+<!-- SECTION 6 -->
+<section class="card" id="hasil">
+  <span class="sec-tag">Bagian 6 · Hasil Eksperimen Riil v2 (25 Nov 2026)</span>
+  <h2>Hasil Walk-Forward LSTM v2 (13 Fitur) vs Baseline B0/B1 &amp; LightGBM</h2>
+  <p class="intro">
+    Seluruh 10 konfigurasi LSTM v2 dievaluasi pada <strong>1.152 event OOF (2019–2023)</strong> memakai data v1.1.0 dan 5 seed Kunci-1 (<code>20261119..20261123</code>).
+  </p>
+
+  <div class="grid-2">
+    <div class="mini-box">
+      <h3>🏆 OOF Log-Loss Gabungan (Makin Kecil = Makin Baik)</h3>
+      <div id="summaryBars" style="margin-top:12px"></div>
+      <p style="margin-top:10px;font-size:12.5px;color:var(--muted)">
+        <strong>LSTM v2 (<code>L46_h32 = 0,9185</code>)</strong> mengalahkan B0 (<code>−0,0513</code>), B1 (<code>−0,0493</code>), LSTM v1 10-fitur (<code>0,9271</code>), dan acuan LightGBM (<code>0,9233</code>)!
+      </p>
+    </div>
+    <div class="mini-box">
+      <h3>📅 Tren Per Tahun: LightGBM vs LSTM v2 (2019–2023)</h3>
+      <div class="table-wrap" style="margin:8px 0 0">
+        <table>
+          <thead>
+            <tr><th>Tahun</th><th class="num">B0</th><th class="num">B1</th><th class="num">LightGBM</th><th class="num">LSTM v2</th><th>Unggul</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>2019</td><td class="num">0,9563</td><td class="num">0,9563</td><td class="num"><strong>0,9024</strong></td><td class="num">0,9153</td><td>GB</td></tr>
+            <tr><td>2020</td><td class="num">1,0035</td><td class="num">1,0007</td><td class="num"><strong>0,9636</strong></td><td class="num">0,9702</td><td>GB</td></tr>
+            <tr class="win"><td>2021</td><td class="num">0,9764</td><td class="num">0,9712</td><td class="num">0,9114</td><td class="num"><strong>0,9081</strong></td><td>LSTM v2!</td></tr>
+            <tr class="win"><td>2022</td><td class="num">0,9452</td><td class="num">0,9391</td><td class="num">0,9165</td><td class="num"><strong>0,9017</strong></td><td>LSTM v2!</td></tr>
+            <tr class="win"><td>2023</td><td class="num">0,9683</td><td class="num">0,9726</td><td class="num">0,9233</td><td class="num"><strong>0,8980</strong></td><td>LSTM v2!</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="margin-top:8px;font-size:12.5px;color:var(--muted)">
+        Begitu data latih melewati ~1.100 event (2021–2023), <strong>LSTM v2 unggul di 3 tahun terakhir berturut-turut</strong> (hingga <code>0,8980</code> di 2023)!
+      </p>
+    </div>
+  </div>
+
+  <h3 style="margin:22px 0 8px;font-size:16.5px">Tabel Interaktif 10 Konfigurasi Grid Search LSTM v2 (Semua 10/10 &lt; 0,9233!)</h3>
+  <div class="pill-bar">
+    <button class="pill active" onclick="renderGrid('all', this)">Semua (10)</button>
+    <button class="pill" onclick="renderGrid(32, this)">Hanya hidden = 32 (5)</button>
+    <button class="pill" onclick="renderGrid(16, this)">Hanya hidden = 16 (5)</button>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th class="num">Rank</th><th>Konfigurasi</th><th class="num">Lookback L</th><th class="num">Hidden</th>
+          <th class="num">2019</th><th class="num">2020</th><th class="num">2021</th><th class="num">2022</th><th class="num">2023</th>
+          <th class="num">OOF Log-Loss</th><th class="num">Brier</th><th class="num">ECE</th><th class="num">Avg Epoch</th>
+        </tr>
+      </thead>
+      <tbody id="gridBody"></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- SECTION 7 -->
+<section class="card" id="glosarium">
+  <span class="sec-tag">Bagian 7 · Kamus Pemula &amp; Roadmap</span>
+  <h2>Glosarium Cepat &amp; Langkah Selanjutnya Menuju Kunci-2</h2>
+  <p class="intro">Istilah kunci yang sering ditanyakan saat bimbingan atau sidang, dijelaskan singkat:</p>
+
+  <dl class="gloss-grid">
+    <div class="gloss-item"><dt>Lookback (<code>L = 46</code>)</dt><dd>Banyaknya candle H1 ke belakang yang dibaca LSTM. <code>46</code> bar = tepat <strong>2 sesi perdagangan XAUUSD penuh</strong> (sesi kemarin pembentuk PDH/PDL + sesi hari ini).</dd></div>
+    <div class="gloss-item"><dt><code>ATR_t*</code></dt><dd>Nilai <code>atr14_h1</code> (rata-rata rentang 14 jam terakhir) pada candle keputusan <code>t*</code> — dipakai sebagai "penggaris adil" agar pola harga 2016 &amp; 2024 setara.</dd></div>
+    <div class="gloss-item"><dt><code>EMA50</code> &amp; <code>vol_regime</code></dt><dd><code>EMA50</code> = rata-rata bergerak eksponensial 50 jam (penunjuk tren H1); <code>vol_regime</code> = rasio ATR saat ini vs rata-rata ATR 120 bar (~5 hari).</dd></div>
+    <div class="gloss-item"><dt>Seed (<code>20261119..20261123</code>)</dt><dd>Angka pengunci proses acak (bobot awal, urutan batch, dropout) agar hasil 100% bisa diulang; 5 seed dirata-rata logits-nya agar stabil.</dd></div>
+    <div class="gloss-item"><dt>Early Stopping (85% / 15%)</dt><dd>Rem otomatis memakai 15% ujung data latih; menghentikan epoch bila Log-Loss tidak membaik 12 epoch berturut-turut tanpa mengintip tahun ujian.</dd></div>
+    <div class="gloss-item"><dt>OOF &amp; Purging</dt><dd>Prediksi di luar data latih (<em>Out-of-Fold</em>). <em>Purging</em> membuang event ujung latih yang jendela label (+8 jam) melintasi awal tahun validasi.</dd></div>
+  </dl>
+
+  <h3 style="margin:22px 0 8px;font-size:16.5px">🗺️ Roadmap Lengkap Penelitian (RM-22 s.d. Uji Final)</h3>
+  <div class="roadmap-list">
+    <div class="rm-item done">
+      <div class="rm-badge">✅ RM-22</div>
+      <div class="rm-body"><strong>Fitur (13 Fitur Sekuensial v2) — Sudah Selesai</strong><p>13 fitur <em>point-in-time</em> dari Proposal Tabel 4.5, Kuesioner RQ1, &amp; Selected Papers + lulus uji pemotongan <code>L = 96</code> (0 mismatch).</p></div>
+    </div>
+    <div class="rm-item done">
+      <div class="rm-badge">✅ RM-23</div>
+      <div class="rm-body"><strong>Pembanding Non-Model (B0 &amp; B1) — Sudah Selesai</strong><p><code>B0 = 0,9698</code> &amp; <code>B1 (wick ≥ 2/3) = 0,9678</code> — SHA-256 100% identik dengan jalur Gradient Boosting.</p></div>
+    </div>
+    <div class="rm-item now">
+      <div class="rm-badge">✅ RM-24 ★</div>
+      <div class="rm-body"><strong>Walk-Forward 2019–2023 — Sudah Selesai (Posisi Sekarang)</strong><p>10 konfigurasi × 5 fold × 5 seed pada 1.152 event OOF → terpilih <strong><code>L46_h32</code> (OOF Log-Loss 0,9185</strong>, mengalahkan B0, B1, &amp; LightGBM 0,9233).</p></div>
+    </div>
+    <div class="rm-item next">
+      <div class="rm-badge">🔜 RM-25</div>
+      <div class="rm-body"><strong>Model Akhir — Latih <code>L46_h32</code> pada Seluruh <code>dev</code> (2016–2023)</strong><p>Tidak pakai Walk-Forward lagi: hanya pemenang <code>L46_h32</code> dilatih penuh (1.841 event × 5 seed) dan disimpan sebagai 5 checkpoint <code>.pt</code> + scaler.</p></div>
+    </div>
+    <div class="rm-item next">
+      <div class="rm-badge">🔜 RM-26</div>
+      <div class="rm-body"><strong>Kalibrasi <code>τ</code> — Temperature Scaling di <code>calib</code> 2024 (227 Event)</strong><p>Mencari 1 skalar suhu <code>τ</code> (<code>Softmax(logits / τ)</code>) pada data 2024 agar probabilitas terkalibrasi jujur (tanpa melatih ulang model).</p></div>
+    </div>
+    <div class="rm-item focus">
+      <div class="rm-badge">👉 RM-27</div>
+      <div class="rm-body"><strong>Aturan Keputusan — Ubah Peluang Terkalibrasi → Reversal / Continuation / Abstain</strong><p>Hitung Nilai Harapan <code>E_rev = (+2)·p_rev + (−1)·p_cont + m_rev·p_net</code> dan <code>E_cont = −0,5·E_rev</code> (dengan <code>m_rev</code> rata-rata R Netral <code>dev</code> &amp; ambang <code>δ = 0,1R</code>): <code>E_rev ≥ +0,1R</code> → <strong>Reversal</strong>, <code>E_rev ≤ −0,2R</code> → <strong>Continuation</strong>, di antaranya → <strong>Abstain (0R)</strong>. Lalu dicatat untung/rugi nyata <code>realized_R</code>.</p></div>
+    </div>
+    <div class="rm-item lock">
+      <div class="rm-badge">🔒 Kunci-2</div>
+      <div class="rm-body"><strong>Pembekuan Penuh (Serentak LSTM &amp; Gradient Boosting)</strong><p>Bekukan seluruh komponen (<code>model .pt + scaler + τ + m_rev + δ = 0,1R</code>) dan segel manifest SHA-256 sebelum menyentuh data uji.</p></div>
+    </div>
+    <div class="rm-item lock">
+      <div class="rm-badge">🎯 Uji Final</div>
+      <div class="rm-body"><strong>Eksekusi Tunggal di <code>kunci_uji/</code> (2025–Jul 2026, 341 Event)</strong><p>Buka folder <code>kunci_uji/</code> tepat <strong>1 kali saja</strong> tanpa latih ulang untuk evaluasi resmi RQ2.1 (bootstrap klaster 2.000×) &amp; RQ2.2 (uji plasebo 1.000 set).</p></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  Dibuat otomatis dari keluaran riil <code>src/model/lstm/</code> (13 fitur v2) · Pipeline <code>pdhl_data</code> v1.1.0 · 256/256 tes OK · Data uji tetap tersegel.
+</footer>
+</main>
+
+<script>
+function setLevelMode(mode, btn) {
+  document.querySelectorAll('#fitur .pill-bar .pill').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const svg = document.getElementById('candleSvg');
+  const exp = document.getElementById('candleExplain');
+  if (mode === 'PDH') {
+    svg.innerHTML =
+      '<line x1="20" y1="45" x2="340" y2="45" stroke="#e11d48" stroke-width="2" stroke-dasharray="6,4"/>' +
+      '<text x="24" y="37" fill="#e11d48" font-size="12" font-weight="700">Garis PDH (Atap Kemarin) · d = +1</text>' +
+      '<path d="M 30 155 Q 150 135 320 95" fill="none" stroke="#2563eb" stroke-width="2" stroke-dasharray="3,3"/>' +
+      '<text x="262" y="90" fill="#2563eb" font-size="10.5" font-weight="700">EMA50 (tren H1)</text>' +
+      '<line x1="90" y1="145" x2="90" y2="105" stroke="#64748b" stroke-width="2"/>' +
+      '<rect x="78" y="112" width="24" height="26" rx="3" fill="#22c55e"/>' +
+      '<line x1="150" y1="120" x2="150" y2="75" stroke="#64748b" stroke-width="2"/>' +
+      '<rect x="138" y="82" width="24" height="30" rx="3" fill="#22c55e"/>' +
+      '<line x1="215" y1="90" x2="215" y2="30" stroke="#0f172a" stroke-width="2.5"/>' +
+      '<rect x="202" y="64" width="26" height="20" rx="3" fill="#ef4444"/>' +
+      '<text x="236" y="34" fill="#0d9488" font-size="11" font-weight="700">s04: wick_against_dir</text>' +
+      '<text x="236" y="76" fill="#1e293b" font-size="11" font-weight="700">Bar keputusan t*</text>' +
+      '<text x="24" y="176" fill="#475569" font-size="10.8">Harga naik mendekati PDH di atas EMA50 → ditolak dari atas → sumbu atas jadi wick_against_dir</text>';
+    exp.innerHTML =
+      '<p style="margin-top:0"><strong>Pada PDH (<code>d = +1</code>):</strong></p>' +
+      '<ul style="padding-left:18px;margin:0;color:#475569">' +
+      '<li>Harga menembus di atas PDH → <code>s01 dist_level_dir &gt; 0</code>.</li>' +
+      '<li>Harga jauh di atas EMA50 → <code>s06 dist_ema50_dir &gt; 0</code> (tren naik kuat).</li>' +
+      '<li><strong>Sumbu atas</strong> menjadi <code>s04 wick_against_dir</code> (sinyal penolakan / <em>Reversal</em>).</li>' +
+      '</ul>';
+  } else {
+    svg.innerHTML =
+      '<line x1="20" y1="145" x2="340" y2="145" stroke="#2563eb" stroke-width="2" stroke-dasharray="6,4"/>' +
+      '<text x="24" y="162" fill="#2563eb" font-size="12" font-weight="700">Garis PDL (Lantai Kemarin) · d = −1</text>' +
+      '<path d="M 30 35 Q 150 55 320 95" fill="none" stroke="#2563eb" stroke-width="2" stroke-dasharray="3,3"/>' +
+      '<text x="262" y="110" fill="#2563eb" font-size="10.5" font-weight="700">EMA50 (tren H1)</text>' +
+      '<line x1="90" y1="45" x2="90" y2="85" stroke="#64748b" stroke-width="2"/>' +
+      '<rect x="78" y="52" width="24" height="26" rx="3" fill="#ef4444"/>' +
+      '<line x1="150" y1="70" x2="150" y2="115" stroke="#64748b" stroke-width="2"/>' +
+      '<rect x="138" y="78" width="24" height="30" rx="3" fill="#ef4444"/>' +
+      '<line x1="215" y1="100" x2="215" y2="160" stroke="#0f172a" stroke-width="2.5"/>' +
+      '<rect x="202" y="106" width="26" height="20" rx="3" fill="#22c55e"/>' +
+      '<text x="236" y="158" fill="#0d9488" font-size="11" font-weight="700">s04: wick_against_dir</text>' +
+      '<text x="236" y="122" fill="#1e293b" font-size="11" font-weight="700">Bar keputusan t*</text>' +
+      '<text x="24" y="22" fill="#475569" font-size="10.8">Dikali d = −1, geometri PDL (termasuk jarak ke EMA50) 100% simetris dengan PDH!</text>';
+    exp.innerHTML =
+      '<p style="margin-top:0"><strong>Pada PDL (<code>d = −1</code>):</strong></p>' +
+      '<ul style="padding-left:18px;margin:0;color:#475569">' +
+      '<li>Harga tembus di bawah PDL dikali <code>−1</code> → <code>s01 dist_level_dir &gt; 0</code>.</li>' +
+      '<li>Harga jauh di bawah EMA50 dikali <code>−1</code> → <code>s06 dist_ema50_dir &gt; 0</code>.</li>' +
+      '<li><strong>Sumbu bawah</strong> menjadi <code>s04 wick_against_dir</code> (pantulan naik / <em>Reversal</em>).</li>' +
+      '</ul>';
+  }
+}
+
+let scaledMode = false;
+const rawSample = [
+  [-1.8, 0.2, 0.9, 0.1, 0.2, 0.9, 0.92, -0.1, 0.50, 0.87, 0.95, 0.31, 0.69],
+  [-1.4, 0.4, 1.1, 0.2, 0.1, 1.2, 0.95,  0.0, 0.71, 0.71, 0.95, 0.31, 0.69],
+  [-1.0, 0.3, 1.2, 0.1, 0.2, 1.5, 0.98,  0.1, 0.87, 0.50, 0.95, 0.31, 0.69],
+  [-0.5, 0.5, 1.4, 0.2, 0.1, 1.9, 1.04,  0.2, 0.97, 0.26, 0.95, 0.31, 0.69],
+  [-0.2, 0.3, 1.5, 0.4, 0.2, 2.1, 1.08,  0.3, 1.00, 0.00, 0.95, 0.31, 0.69],
+  [ 0.1, 0.8, 1.9, 0.7, 0.1, 2.4, 1.15,  0.5, 0.97,-0.26, 0.95, 0.31, 0.69],
+];
+const scaledSample = [
+  [-2.2,-0.7,-0.8,-0.8, 0.0,-1.0,-0.4,-0.5, 0.50, 0.87, 0.95, 0.31,-0.2],
+  [-1.7,-0.3,-0.6,-0.6,-0.4,-0.8,-0.3, 0.0, 0.71, 0.71, 0.95, 0.31,-0.2],
+  [-1.2,-0.4,-0.5,-0.8, 0.0,-0.6,-0.1, 0.5, 0.87, 0.50, 0.95, 0.31,-0.2],
+  [-0.6,-0.2,-0.3,-0.6,-0.4,-0.3, 0.2, 1.0, 0.97, 0.26, 0.95, 0.31,-0.2],
+  [-0.2,-0.4,-0.2,-0.2, 0.0,-0.1, 0.4, 1.5, 1.00, 0.00, 0.95, 0.31,-0.2],
+  [ 0.1, 0.2, 0.2, 0.4,-0.4, 0.1, 0.7, 2.4, 0.97,-0.26, 0.95, 0.31,-0.2],
+];
+const fShort = ['s01','s02','s03','s04','s05','s06','s07','s08','s09*','s10*','s11*','s12*','s13'];
+function cellColor(v, isCyclic) {
+  if (isCyclic) return '#ede9fe';
+  if (v >= 0.8) return '#99f6e4';
+  if (v >= 0.2) return '#ccfbf1';
+  if (v <= -0.8) return '#fecdd3';
+  if (v <= -0.2) return '#ffe4e6';
+  return '#f1f5f9';
+}
+function renderTensor() {
+  const mat = scaledMode ? scaledSample : rawSample;
+  let html = '<div class="tensor-grid">';
+  fShort.forEach(s => {
+    html += '<div style="text-align:center;font-size:10.5px;font-weight:700;color:#475569">' + s + '</div>';
+  });
+  mat.forEach(row => {
+    row.forEach((v, j) => {
+      const cyc = (j >= 8 && j <= 11);
+      html += '<div class="t-cell" style="background:' + cellColor(v, cyc) + '">' + v.toFixed(1) + '</div>';
+    });
+  });
+  html += '</div>';
+  document.getElementById('tensorBox').innerHTML = html;
+}
+function toggleScale() {
+  scaledMode = !scaledMode;
+  document.getElementById('scaleToggleBtn').textContent = scaledMode
+    ? 'Mode: Sesudah SequenceScaler3D (s09*–s12* siklik dilewati!)'
+    : 'Mode: Angka Mentah (Klik untuk lihat hasil SequenceScaler3D)';
+  renderTensor();
+}
+
+const gateNotes = [
+  '<strong>Sedang aktif — Forget Gate:</strong> Dari 46 jam terakhir, gerbang ini menyaring riak lama yang sudah basi agar fokus pada kondisi pendekatan PDH/PDL saat ini.',
+  '<strong>Sedang aktif — Input Gate:</strong> Saat candle menyentuh PDH jauh di atas EMA50 dengan volatilitas naik dan wick penolakan + lonjakan volume jam-sama, gerbang ini menyimpannya kuat ke memori.',
+  '<strong>Sedang aktif — Output Gate → Linear(3):</strong> Setelah 46 bar selesai dibaca, 32 angka ringkasan memori diubah oleh Linear(3) menjadi 3 skor (logits) → Softmax menjadi peluang 3 kelas.'
+];
+function highlightGate(idx, btn) {
+  document.querySelectorAll('#otak-lstm .pill-bar .pill').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('#gateGrid .gate-card').forEach((c, i) => {
+    c.classList.toggle('active', i === idx);
+  });
+  document.getElementById('gateDetail').innerHTML = gateNotes[idx];
+}
+
+function updateLogLoss() {
+  const p = Number(document.getElementById('llSlider').value) / 100;
+  const ll = -Math.log(p);
+  document.getElementById('llProbTxt').textContent = p.toFixed(2).replace('.', ',');
+  let verdict = '';
+  if (ll < 0.4) verdict = '<span style="color:#16a34a;font-weight:700">Sangat bagus!</span> Yakin pada kelas benar, hukuman kecil.';
+  else if (ll < 0.97) verdict = '<span style="color:#0d9488;font-weight:700">Lebih baik dari baseline B0 (0,9698).</span>';
+  else if (ll < 1.5) verdict = '<span style="color:#d97706;font-weight:700">Kurang yakin</span> — lebih buruk dari baseline B0.';
+  else verdict = '<span style="color:#e11d48;font-weight:700">Hukuman berat!</span> Terlalu meremehkan kelas yang benar.';
+  document.getElementById('llResult').innerHTML =
+    'Rumus: <code>−ln(' + p.toFixed(2) + ')</code> = <strong style="font-size:18px">' + ll.toFixed(4).replace('.', ',') + '</strong> · ' + verdict;
+}
+
+const summaryData = [
+  { name: 'LSTM v2 (L46_h32, 13f) ★', val: 0.9185, color: '#0d9488' },
+  { name: 'LightGBM (d2_n100_m50)', val: 0.9233, color: '#2563eb' },
+  { name: 'LSTM v1 (L40_h32, 10f)', val: 0.9271, color: '#7c3aed' },
+  { name: 'Baseline B1 (wick ≥ 2/3)', val: 0.9678, color: '#d97706' },
+  { name: 'Baseline B0 (prior)', val: 0.9698, color: '#94a3b8' },
+];
+function renderSummaryBars() {
+  const el = document.getElementById('summaryBars');
+  el.innerHTML = summaryData.map(d => {
+    const pct = Math.max(12, Math.min(100, ((d.val - 0.89) / (0.98 - 0.89)) * 100));
+    return '<div class="bar-row">' +
+      '<div class="bar-label">' + d.name + '</div>' +
+      '<div class="bar-track"><div class="bar-fill" style="width:' + pct.toFixed(1) + '%;background:' + d.color + '"></div></div>' +
+      '<div class="bar-num">' + d.val.toFixed(4).replace('.', ',') + '</div>' +
+      '</div>';
+  }).join('');
+}
+
+const gridData = [
+  { rank:1, id:'L46_h32', L:46, h:32, y19:0.9153, y20:0.9702, y21:0.9081, y22:0.9017, y23:0.8980, ll:0.9185, br:0.5508, ece:0.0370, ep:14.6 },
+  { rank:2, id:'L40_h32', L:40, h:32, y19:0.9153, y20:0.9701, y21:0.9081, y22:0.9016, y23:0.8987, ll:0.9186, br:0.5509, ece:0.0373, ep:14.5 },
+  { rank:3, id:'L60_h32', L:60, h:32, y19:0.9167, y20:0.9704, y21:0.9082, y22:0.9018, y23:0.8985, ll:0.9189, br:0.5511, ece:0.0327, ep:15.4 },
+  { rank:4, id:'L96_h32', L:96, h:32, y19:0.9170, y20:0.9703, y21:0.9114, y22:0.9020, y23:0.8970, ll:0.9194, br:0.5513, ece:0.0313, ep:15.8 },
+  { rank:5, id:'L23_h32', L:23, h:32, y19:0.9156, y20:0.9698, y21:0.9091, y22:0.9050, y23:0.9034, ll:0.9204, br:0.5519, ece:0.0306, ep:13.3 },
+  { rank:6, id:'L96_h16', L:96, h:16, y19:0.9211, y20:0.9742, y21:0.9110, y22:0.8989, y23:0.9023, ll:0.9213, br:0.5519, ece:0.0318, ep:24.6 },
+  { rank:7, id:'L46_h16', L:46, h:16, y19:0.9224, y20:0.9741, y21:0.9101, y22:0.9009, y23:0.9010, ll:0.9215, br:0.5521, ece:0.0363, ep:25.2 },
+  { rank:8, id:'L40_h16', L:40, h:16, y19:0.9225, y20:0.9740, y21:0.9101, y22:0.9035, y23:0.9008, ll:0.9220, br:0.5524, ece:0.0345, ep:24.6 },
+  { rank:9, id:'L60_h16', L:60, h:16, y19:0.9221, y20:0.9742, y21:0.9109, y22:0.9007, y23:0.9046, ll:0.9223, br:0.5524, ece:0.0361, ep:23.4 },
+  { rank:10,id:'L23_h16', L:23, h:16, y19:0.9229, y20:0.9735, y21:0.9101, y22:0.9072, y23:0.9025, ll:0.9230, br:0.5531, ece:0.0362, ep:23.3 },
+];
+function fmt(n, d) { return n.toFixed(d).replace('.', ','); }
+function renderGrid(filter, btn) {
+  if (btn) {
+    document.querySelectorAll('#hasil .pill-bar .pill').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+  const rows = filter === 'all' ? gridData : gridData.filter(r => r.h === filter);
+  document.getElementById('gridBody').innerHTML = rows.map(r =>
+    '<tr class="' + (r.rank === 1 ? 'win' : '') + '">' +
+    '<td class="num">' + r.rank + '</td>' +
+    '<td><code>' + r.id + '</code>' + (r.rank === 1 ? ' ★' : '') + '</td>' +
+    '<td class="num">' + r.L + '</td><td class="num">' + r.h + '</td>' +
+    '<td class="num">' + fmt(r.y19,4) + '</td><td class="num">' + fmt(r.y20,4) + '</td>' +
+    '<td class="num">' + fmt(r.y21,4) + '</td><td class="num">' + fmt(r.y22,4) + '</td><td class="num">' + fmt(r.y23,4) + '</td>' +
+    '<td class="num"><strong>' + fmt(r.ll,4) + '</strong></td>' +
+    '<td class="num">' + fmt(r.br,4) + '</td><td class="num">' + fmt(r.ece,4) + '</td>' +
+    '<td class="num">' + fmt(r.ep,1) + '</td></tr>'
+  ).join('');
+}
+
+setLevelMode('PDH', document.querySelector('#fitur .pill-bar .pill'));
+renderTensor();
+highlightGate(0, document.querySelector('#otak-lstm .pill-bar .pill'));
+updateLogLoss();
+renderSummaryBars();
+renderGrid('all', null);
+</script>
+</body>
+</html>
