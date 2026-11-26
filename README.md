@@ -4,8 +4,9 @@
 
 Pipeline data untuk penelitian tesis tentang *first touch* Previous-Day High/Low (PDH/PDL) pada XAUUSD H1.
 Pipeline ini mengolah data mentah sampai menjadi data berlabel *triple barrier*, siap dipakai eksperimen model
-(**Gradient Boosting vs LSTM**). Tahap awal pemodelan Gradient Boosting (fitur, baseline, *walk-forward*) ada di
-`src/model/gradient_boosting/` (lihat [Pemodelan Gradient Boosting](#pemodelan-gradient-boosting)).
+(**Gradient Boosting vs LSTM**). Tahap pemodelan tersedia pada dua subpaket sejajar:
+`src/model/gradient_boosting/` (lihat [Pemodelan Gradient Boosting](#pemodelan-gradient-boosting)) dan
+`src/model/lstm/` (lihat [Pemodelan LSTM](#pemodelan-lstm)).
 
 ```
 XAUUSD_H1.csv ──► events ──────────────► split + kunci uji ─────────► labels
@@ -81,7 +82,8 @@ python3 -m unittest discover -s tests -v
 | `data/` | `events_{dev,calib}.csv`, `bars_devcalib.csv`, `sessions_devcalib.csv`, **`labels_{dev,calib}.csv`** | **Ya, hanya folder ini** |
 | `kunci_uji/` | `events_test.csv`, `bars_test.csv`, `sessions_test.csv`, manifest SHA-256 (hanya-baca) | Tidak sebelum eksekusi tunggal |
 | `output/` | `split_rekonsiliasi.json`, `label_rekonsiliasi.json`, `label_purged.csv`, `laporan_label.md` | Laporan |
-| `model/gradient_boosting/` | `data/` (fitur, OOF baseline dan *walk-forward*), `output/` (rekonsiliasi, laporan) | Hasil pemodelan (ditulis `python -m model.gradient_boosting`) |
+| `model/gradient_boosting/` | `data/` (fitur, OOF baseline dan *walk-forward*), `output/` (rekonsiliasi, laporan) | Hasil pemodelan GB (ditulis `python -m model.gradient_boosting`) |
+| `model/lstm/` | `data/`, `output/`, `checkpoints/` (5 `.pt` + scaler), `kunci_2/` (segel SHA-256 hanya-baca) | Hasil pemodelan LSTM (ditulis `python -m model.lstm`) |
 
 Kolom dan aturan lengkap ada di [docs/SPESIFIKASI_DATA.md](docs/SPESIFIKASI_DATA.md).
 
@@ -112,6 +114,51 @@ PYTHONPATH=src python3 -m model.gradient_boosting semua --config configs/tesis.j
 
 Proses, rumus, dan hasil lama sebagai acuan ada di
 [docs/PEMODELAN_GRADIENT_BOOSTING.md](docs/PEMODELAN_GRADIENT_BOOSTING.md).
+
+## Pemodelan LSTM
+
+Kode di `src/model/lstm/` menjalankan seluruh tahap pemodelan **LSTM v2 (13 fitur sekuensial)** dari RM-22
+sampai pembekuan pra-uji 🔒 Kunci-2 pada `runs/tesis/data/` (tanpa menyentuh `kunci_uji/`) dan menulis
+hasilnya ke `runs/tesis/model/lstm/{data,output,checkpoints,kunci_2}/`:
+
+| Tahap | Perintah | Isi |
+|---|---|---|
+| 1 (RM-22) | `fitur` | 13 fitur sekuensial *point-in-time* (v2), uji pemotongan (`L=96`), laporan fitur |
+| 2 (RM-23) | `pembanding` | Baseline B0 & B1 (*wick* ≥ 2/3): identik SHA-256 dengan Gradient Boosting |
+| 3 (RM-24) | `walk-forward` | 10 konfigurasi LSTM (`L × hidden`) × 5 lipatan × 5 seed Kunci-1 → `L46_h32` |
+| 4 (RM-25) | `model-akhir` | Latih penuh pemenang `L46_h32` di seluruh `dev` (1.841 event × 5 seed) → 5 `.pt` + scaler |
+| 5 (RM-26) | `kalibrasi` | *Temperature scaling* `τ` pada `calib` 2024 (227 event) via *golden-section search* |
+| 6 (RM-27) | `keputusan` | Aturan keputusan `E_rev`/`E_cont` (`m_rev` Netral `dev`, `δ = 0,1R`) & `realized_R` |
+| 7 (Kunci-2) | `kunci-2` | Bekukan seluruh komponen (`read-only`) & segel `MANIFEST_KUNCI_2_LSTM.json` (SHA-256) |
+| – | `verifikasi-kunci-2` | Audit integritas segel Kunci-2 terhadap manifest SHA-256 (murni stdlib) |
+
+**Instalasi khusus jalur LSTM saja (tanpa LightGBM):**
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
+pip install -e '.[lstm]'           # atau: pip install -r requirements-lstm.txt
+```
+
+**Menjalankan:**
+
+```bash
+# Pastikan data pipeline v1.1.0 sudah dibuat terlebih dulu:
+PYTHONPATH=src python3 -m pdhl_data run --config configs/tesis.json
+
+# Jalankan seluruh alur RM-22 s.d. Kunci-2:
+PYTHONPATH=src python3 -m model.lstm semua --config configs/tesis.json --device cpu
+
+# Atau jalankan RM-25 -> RM-26 -> RM-27 -> Kunci-2 saja di atas hasil RM-22..24:
+PYTHONPATH=src python3 -m model.lstm lanjutan --config configs/tesis.json --device cpu
+
+# Verifikasi segel Kunci-2:
+PYTHONPATH=src python3 -m model.lstm verifikasi-kunci-2 --config configs/tesis.json
+```
+
+- Setelah `pip install -e '.[lstm]'`, perintah `pdhl-lstm ...` setara dengan `PYTHONPATH=src python3 -m model.lstm ...`.
+- Tahap `fitur`, `pembanding`, `keputusan`, `kunci-2`, dan `verifikasi-kunci-2` berjalan murni dengan stdlib; `torch` & `numpy` hanya dibutuhkan untuk `walk-forward`, `model-akhir`, dan `kalibrasi`.
+- Dokumentasi lengkap ada di [docs/lstm/PEMODELAN_LSTM.md](docs/lstm/PEMODELAN_LSTM.md) dan panduan interaktif pemula di [docs/lstm/panduan_lstm_pemula.html](docs/lstm/panduan_lstm_pemula.html).
 
 ## Aturan data uji
 
@@ -159,9 +206,13 @@ references/     SHA-256 dan angka rekonsiliasi acuan; gradient_boosting_lama/ = 
 src/pdhl_data/  paket pipeline (common, config, events, split, labels, pipeline, CLI)
 src/model/gradient_boosting/
                 pemodelan GB: kunci, jalur, fitur, laporan_fitur, pembanding, walk_forward, bandingkan, CLI
-tests/          unittest (event, split/guard, label, konfigurasi, reproduksi end-to-end, test_gb_*)
+src/model/lstm/ pemodelan LSTM: kunci, jalur, fitur, arsitektur, pembanding, walk_forward, model_akhir,
+                kalibrasi, keputusan, kunci_2, CLI
+tests/          unittest (pipeline data, test_gb_*, test_lstm_*)
 notebooks/      notebook Google Colab (00_setup_colab.ipynb)
-docs/           spesifikasi data, proses pemodelan Gradient Boosting
+docs/           spesifikasi data, pemodelan GB, dan subfolder docs/lstm/ (panduan HTML & dokumentasi LSTM)
+requirements-model.txt / requirements-lstm.txt
+                daftar dependensi terpisah untuk jalur GB dan jalur LSTM
 data/raw/       XAUUSD_H1.csv (data mentah)
 runs/           keluaran run (tidak di-commit)
 ```
