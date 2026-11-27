@@ -1,22 +1,26 @@
-# Pemodelan Gradient Boosting: Fitur, Baseline, dan Validasi Walk-Forward
+# Pemodelan Gradient Boosting: Fitur, Baseline, Walk-Forward, dan Model Akhir
 
-Dokumen ini menjelaskan tiga tahap pertama pemodelan *gradient boosting* (LightGBM) di
+Dokumen ini menjelaskan empat tahap pemodelan *gradient boosting* (LightGBM) di
 `src/model/gradient_boosting/`:
 
 1. rekayasa 15 fitur;
 2. baseline non-model B0/B1;
-3. validasi *walk-forward* untuk memilih konfigurasi.
+3. validasi *walk-forward* untuk memilih konfigurasi;
+4. model akhir, kalibrasi *temperature scaling* τ, dan parameter aturan keputusan.
 
 Rujukan pasal mengikuti *Proposal Final v2*. Rancangan lengkapnya ada di
 `Metodologi Pemodelan ML PDH-PDL.md` (di luar repo).
 
-> **Status (24 Nov 2026).** Kode dan tes sudah ada, tetapi **belum dijalankan pada data asli**. Hasil
-> lama (22 Nov 2026) dicantumkan di Bagian 8 sebagai acuan. Model akhir, kalibrasi τ, aturan keputusan,
-> dan Kunci-2 belum dipindahkan ke repo.
+> **Status (27 Nov 2026).** Kode tahap fitur sudah mengikuti Kunci-1 Adendum 4 (25 Nov 2026):
+> fitur 14 = CMF-21 bertanda *d* dan fitur 15 = *permutation entropy* 48 *return* (Bagian 3).
+> **Keempat tahap belum dijalankan ulang dengan fitur baru.** Keluaran di
+> `runs/tesis/model/gradient_boosting/` dan semua angka di Bagian 9 masih berasal dari run
+> 24 Nov 2026 dengan fitur 14–15 lama (*engulfing*, volume relatif), dan akan digantikan hasil run
+> ulang. Kunci-2, eksekusi tunggal pada data uji, dan evaluasi belum dimulai.
 
 ## 1. Kenapa diulang dari awal
 
-Ketiga tahap ini sebelumnya dihitung di folder lama `Pemodelan PDH-PDL/` (di luar repo), memakai data
+Keempat tahap ini sebelumnya dihitung di folder lama `Pemodelan PDH-PDL/` (di luar repo), memakai data
 pipeline **sebelum** adendum ATR 2026-11-24. Waktu itu bar sebelum 2015-01-01 dibuang sebelum
 indikator dihitung, sehingga:
 
@@ -35,24 +39,27 @@ Pipeline v1.1.0 memakai riwayat 2009–2014 sebagai pemanasan (lihat
 
 Dampaknya diperkirakan sangat kecil. Meski begitu, seluruh tahap dihitung ulang dari data v1.1.0 dengan
 kode yang kini tersimpan dan teruji di repo. Hasilnya dibandingkan dengan hasil lama lewat perintah
-`bandingkan` (Bagian 8), supaya dampaknya bisa ditunjukkan dengan angka, bukan hanya diperkirakan.
+`bandingkan` (Bagian 9), supaya dampaknya bisa ditunjukkan dengan angka, bukan hanya diperkirakan.
 
 Kode ini adalah **port setia** dari kode lama. Rumus fitur, aturan B1, grid LightGBM, *seed*, lipatan,
-dan aturan pemilihan sudah dikunci di Kunci-1 (7 dan 17 Nov 2026), jadi tidak dirancang ulang.
-Tambahannya hanya pengaman (Bagian 6), struktur folder, dan tes.
+aturan pemilihan, rentang τ, dan δ sudah dikunci di Kunci-1 (7 dan 17 Nov 2026), jadi tidak
+dirancang ulang. Tambahannya hanya pengaman (Bagian 7), struktur folder, dan tes. Satu-satunya
+perubahan rumus sesudah itu adalah fitur 14 dan 15, yang diganti lewat Adendum 4 (25 Nov 2026;
+Bagian 3).
 
 ## 2. Alur
 
 ```mermaid
 flowchart LR
-    D["runs/tesis/data/<br/>bars, events, labels<br/>(pipeline v1.1.0)"] --> C{"Cek:<br/>manifest Kunci-1,<br/>a/b/T/k,<br/>SHA-256 masukan"}
+    D["runs/tesis/data/<br/>bars, events, labels<br/>(pipeline v1.1.0)"] --> C{"Cek:<br/>manifest Kunci-1<br/>dan Adendum 4,<br/>a/b/T/k,<br/>SHA-256 masukan"}
     C --> F["1 · fitur<br/>15 fitur point-in-time<br/>dev + calib"]
     F --> B["2 · pembanding<br/>B0, B1<br/>akhir + OOF 2019–2023"]
     F --> W["3 · walk-forward<br/>8 konfigurasi × 5 lipatan"]
     B --> W
     W --> P["Konfigurasi terpilih<br/>log loss OOF terkecil"]
-    P -.-> L["Berikutnya (belum di repo):<br/>model akhir, τ, aturan keputusan, Kunci-2"]
-    W --> K["bandingkan<br/>vs hasil lama"]
+    P --> M["4 · model-akhir<br/>latih sekali pada dev,<br/>τ dari 2024, m_rev, m_cont, δ"]
+    M -.-> L["Berikutnya:<br/>Kunci-2, eksekusi tunggal, evaluasi"]
+    M --> K["bandingkan<br/>vs hasil lama"]
 ```
 
 | Tahap | Modul | Data yang dibaca | Keluaran (`runs/tesis/model/gradient_boosting/`) |
@@ -60,6 +67,7 @@ flowchart LR
 | 1 | `fitur.py`, `laporan_fitur.py` | `bars_devcalib.csv`, `events_{dev,calib}.csv` | `data/features_{dev,calib}.csv`, `output/fitur_rekonsiliasi.json`, `output/laporan_fitur.md` |
 | 2 | `pembanding.py` | `features_dev.csv`, `labels_dev.csv` | `data/pembanding_oof_dev.csv`, `output/pembanding_rekonsiliasi.json`, `output/laporan_pembanding.md` |
 | 3 | `walk_forward.py` | `features_dev.csv`, `labels_dev.csv`, `pembanding_oof_dev.csv` | `data/walk_forward_oof_dev.csv`, `output/walk_forward_rekonsiliasi.json`, `output/laporan_walk_forward.md` |
+| 4 | `model_akhir.py`, `laporan_model_akhir.py` | `features_{dev,calib}.csv`, `labels_{dev,calib}.csv`, `walk_forward_oof_dev.csv`, `walk_forward_rekonsiliasi.json` | `model/model_akhir_lgbm.txt`, `data/model_akhir_calib.csv`, `output/model_akhir_rekonsiliasi.json`, `output/laporan_model_akhir.md`, `output/gambar_reliabilitas_2024.svg` |
 | – | `bandingkan.py` | rekonsiliasi baru + `references/gradient_boosting_lama/` | `output/bandingkan_lama.md` |
 
 Folder `runs/tesis/data/` milik pipeline tidak pernah ditulisi. Kode pemodelan hanya menulis ke
@@ -87,20 +95,33 @@ berarti "menuju atau melewati level".
 | 11 | `f11_jarak_ema50` | *d* · (C*t*\* − EMA50*t*\*) / ATR | *t*\* |
 | 12 | `f12_return_minggu` | *d* · (C*t*\* − O bar pertama minggu) / ATR*d* | *t*\* |
 | 13 | `f13_wick_penolakan` | wick searah *reversal* / (H*t* − L*t*); 0 bila H = L | *t* |
-| 14 | `f14_engulfing_d` | *d* · arah badan *t* bila *t* engulfing *t* − 1, selain itu 0 | *t* |
-| 15 | `f15_volume_relatif` | V*t* / rata-rata V jam NY yang sama pada 20 sesi sebelumnya (min. 10 bar) | *t* |
+| 14 | `f14_cmf21_d` | *d* · Σ MFM*i*·V*i* / Σ V*i* atas 21 bar terakhir s.d. *t*\* (termasuk *t*\*). MFM*i* = ((C*i* − L*i*) − (H*i* − C*i*)) / (H*i* − L*i*), 0 bila H*i* = L*i*. V = *tick volume*. 0 bila Σ V = 0. Rentang [−1, 1] | *t*\* |
+| 15 | `f15_pe48` | *Permutation entropy* ternormalisasi atas 48 *log return* terakhir s.d. *t*\* (49 *close*), orde 3, tunda 1 (46 pola ordinal): −Σ *p* ln *p* / ln 3!. Nilai yang sama diurutkan menurut kemunculan. Rentang [0, 1]; tidak bertanda *d* | *t*\* |
 
-Fitur 13–15 berasal dari Adendum 1 Kunci-1 (isyarat yang paling sering disebut responden: *wick* 5,
-*engulfing* 3, volume 3 dari 9 responden). Kolom `b1_terpenuhi` = f13 ≥ θ (θ = 0,6666666667,
-toleransi 10⁻⁹) disimpan untuk baseline B1.
+Fitur 13–15 mengikuti Adendum 4 Kunci-1 (25 Nov 2026; `configs/kunci_1/ADENDUM_4.md` dan
+`kunci_1_adendum_4.json`):
+
+- f13 tetap seperti Adendum 1;
+- f14 menggantikan `f14_engulfing_d`, dan f15 menggantikan `f15_volume_relatif`;
+- dasar pemilihannya literatur, bukan kuesioner. Kuesioner kini hanya menjadi sumber aturan B1.
+
+f14 positif berarti tekanan menuju atau melewati level (beli di PDH, jual di PDL). f15 adalah fitur
+keteraturan jalur harga, bukan fitur arah: 0 berarti pola berulang, 1 berarti mendekati acak. "Bar"
+adalah bar H1 yang tersedia, berurutan menurut waktu; bar yang hilang tidak ditambal. Bila riwayat
+kurang dari 21 bar (f14) atau 49 *close* (f15), fitur kosong. Pada data dev/calib hal ini tidak
+diharapkan terjadi, karena 2015 menjadi pemanasan, dan `cek_tanpa_kosong` menghentikan tahap bila
+terjadi.
+
+Kolom `b1_terpenuhi` = f13 ≥ θ (θ = 0,6666666667, toleransi 10⁻⁹) disimpan untuk baseline B1.
+Aturan B1 tidak diubah Adendum 4.
 
 **Bukti *point-in-time*.**
 
 - **Guard mekanis.** Setiap akses ke bar dan EMA lewat `PointInTime`, yang melempar `LookAheadError`
-  bila indeksnya melewati *t*\*.
+  bila indeksnya melewati *t*\*. Jendela CMF dan *permutation entropy* juga dibaca lewat guard ini.
 - **Uji pemotongan.** Deret bar dipotong tepat pada bar keputusan beberapa event, lalu semua konteks
-  (EMA, peta minggu, peta sesi × jam) dihitung ulang. Fitur harus identik persis dengan perhitungan
-  pada data penuh. Bila ada satu saja yang berbeda, tahap berhenti sebelum berkas apa pun ditulis.
+  (EMA dan peta minggu) dihitung ulang. Fitur harus identik persis dengan perhitungan pada data
+  penuh. Bila ada satu saja yang berbeda, tahap berhenti sebelum berkas apa pun ditulis.
 
 Statistik deskriptif ada di `laporan_fitur.md` dan sengaja tidak dikondisikan pada label.
 
@@ -147,14 +168,47 @@ Grid dan parameter teknis dibaca dari `kunci_1_rq2.json`, lalu dicocokkan lagi d
 kode. Bila berbeda, proses berhenti. Probabilitas *walk-forward* tidak dikalibrasi. Selisih *log loss*
 model terpilih − B0/B1 per tahun dilaporkan secara deskriptif, bukan sebagai uji keunggulan.
 
-## 6. Sumber parameter dan pengaman
+## 6. Tahap 4: model akhir, kalibrasi τ, dan aturan keputusan (RM-25 s.d. RM-27, IV.II.6–IV.II.8)
+
+Modul `model_akhir.py` (perhitungan) dan `laporan_model_akhir.py` (laporan Markdown dan diagram SVG).
+
+1. **Model akhir (RM-25).** Konfigurasi terpilih *walk-forward* dilatih **sekali** pada seluruh dev
+   2016–2023, dengan *purging* di batas 2024-01-01 dan parameter Kunci-1 yang sama dengan tahap 3.
+   Model tidak dilatih ulang dengan data 2024, agar τ dari 2024 berlaku persis untuk model yang diuji.
+   Model disimpan sebagai teks LightGBM (`model/model_akhir_lgbm.txt`) beserta SHA-256-nya.
+2. **Kalibrasi τ (RM-26).** *Temperature scaling*: *p* = softmax(*z* / τ) atas skor mentah LightGBM.
+   τ meminimalkan *log loss* data kalibrasi 2024 dan dicari dengan *golden-section* pada rentang
+   terkunci [0,05; 20]. Hasilnya dicek terhadap grid log-spasi 401 titik agar bukan minimum lokal.
+   *Log loss*, Brier, dan ECE per kelas (10 bin) dilaporkan sebelum dan sesudah τ, bersama B0/B1 pada
+   2024 sebagai acuan.
+3. **Aturan keputusan (RM-27).** *m*rev dan *m*cont = rata-rata R posisi *reversal* dan
+   *continuation* pada event Netral dev. Nilai harapan *E*(rev) = *p*rev · a/b − *p*cont + *p*net ·
+   *m*rev dan *E*(cont) = *p*cont · b/a − *p*rev + *p*net · *m*cont. Rekomendasi = aksi dengan *E*
+   tertinggi bila ≥ δ = 0,1R; selain itu abstain.
+
+Pratinjau aturan keputusan pada 2024 dan pada OOF *walk-forward* 2019–2023 (R kotor, tanpa biaya)
+hanya deskriptif dan tidak dipakai untuk memilih δ atau parameter lain.
+
+| Keluaran | Isi |
+|---|---|
+| `model/model_akhir_lgbm.txt` | Model LightGBM (teks), SHA-256 dicatat di rekonsiliasi |
+| `data/model_akhir_calib.csv` | Per event 2024: skor mentah, peluang sebelum/sesudah τ, *log loss*, *E*, rekomendasi, R |
+| `output/model_akhir_rekonsiliasi.json` | Semua angka calon Kunci-2: konfigurasi, τ, *m*rev, *m*cont, δ, B0/B1 dev, kolom fitur, versi pustaka |
+| `output/laporan_model_akhir.md`, `output/gambar_reliabilitas_2024.svg` | Laporan dan diagram reliabilitas |
+
+## 7. Sumber parameter dan pengaman
 
 | Pengaman | Isi | Galat bila dilanggar |
 |---|---|---|
-| Manifest Kunci-1 | `configs/kunci_1/` = salinan byte-identik berkas Kunci-1; SHA-256 dicek terhadap `MANIFEST_KUNCI_1.json` | `KunciError` |
+| Manifest Kunci-1 | `configs/kunci_1/` = salinan byte-identik berkas Kunci-1; SHA-256 dicek terhadap `MANIFEST_KUNCI_1.json` dan `MANIFEST_KUNCI_1_ADENDUM_4.json` (yang juga mencatat hash manifest sebelumnya) | `KunciError` |
+| Fitur sesuai kunci (baru) | Nama fitur 13–15, jendela CMF (21), dan parameter *permutation entropy* (48 *return*, orde 3, tunda 1) di kode = `kunci_1_adendum_4.json`; θ B1 di adendum = `kunci_1_fitur.json`. Rumus MFM, aturan nilai seri, dan normalisasi dijaga tes unit, bukan pemeriksaan ini. SHA-256 `kunci_1_fitur.json` dan `kunci_1_adendum_4.json` dicatat di `fitur_rekonsiliasi.json` dan `model_akhir_rekonsiliasi.json` | `KunciError` |
 | Label | a/b/T/k `configs/tesis.json` = `kunci_1.json` | `KunciError` |
 | Data masukan | SHA-256 `bars_devcalib`, `events_{dev,calib}`, `labels_{dev,calib}` = `references/tesis.json`. Acuan wajib ada, kecuali dengan `--tanpa-acuan` | `DataInputBerbeda` / `FileNotFoundError` |
 | Urutan tahap | OOF pembanding harus dihitung dari `features_dev.csv` dan `labels_dev.csv` yang sekarang (hash di `pembanding_rekonsiliasi.json`) | `ValueError` |
+| Konfigurasi model akhir | Konfigurasi terpilih harus anggota grid, terpilih ulang dari skor *walk-forward*, dan `features_dev.csv`/`labels_dev.csv` sama dengan saat *walk-forward* | `ValueError` |
+| Rentang split | Event dev harus 2016–2023 dan calib 2024 | `ValueError` |
+| R label | `R_rev`/`R_cont` sesuai Tabel 4.3 (barrier bernilai tetap, Netral konsisten) | `ValueError` |
+| Skor mentah | softmax(skor mentah) = `predict` LightGBM (selisih ≤ 10⁻⁹); τ hasil *golden-section* tidak kalah dari grid 401 titik | `RuntimeError` |
 | Acuan lama | SHA-256 berkas `references/gradient_boosting_lama/` = `asal.json` | `AcuanLamaRusak` |
 | **Guard ATR (baru)** | Setiap bar wajib punya `atr14_h1` > 0, dan setiap event wajib punya `atr14_d_prev` > 0 | `AtrKosong` |
 | Fitur kosong (baru) | Tidak boleh ada fitur dev/calib yang kosong | `ValueError` |
@@ -165,7 +219,7 @@ Guard ATR membuat data dari pipeline < 1.1.0 (13 bar pertama 2015 tanpa ATR) lan
 kesalahan yang sama tidak bisa terulang tanpa terlihat. Setiap rekonsiliasi mencatat hash masukan,
 `versi_pdhl_data`, dan *commit* git untuk audit.
 
-## 7. Menjalankan
+## 8. Menjalankan
 
 Data pipeline harus dibuat lebih dulu dengan kode v1.1.0:
 
@@ -173,19 +227,38 @@ Data pipeline harus dibuat lebih dulu dengan kode v1.1.0:
 PYTHONPATH=src python3 -m pdhl_data run --config configs/tesis.json
 ```
 
-Tahap fitur dan baseline hanya memakai stdlib. Tahap *walk-forward* butuh LightGBM:
+Tahap fitur dan baseline hanya memakai stdlib. Tahap *walk-forward* dan model akhir butuh LightGBM:
 
 ```bash
 pip install -e '.[model]'
 ```
 
-Menjalankan semua tahap secara berurutan (fitur → pembanding → walk-forward → bandingkan):
+Menjalankan semua tahap secara berurutan (fitur → pembanding → walk-forward → model-akhir →
+bandingkan):
 
 ```bash
 PYTHONPATH=src python3 -m model.gradient_boosting semua --config configs/tesis.json
 ```
 
-Tahap juga bisa dijalankan satu per satu: `fitur`, `pembanding`, `walk-forward`, atau `bandingkan`.
+Tahap juga bisa dijalankan satu per satu: `fitur`, `pembanding`, `walk-forward`, `model-akhir`, atau
+`bandingkan`.
+
+Visualisasi untuk dokumentasi dibuat terpisah (tidak termasuk `semua`) sesudah `model-akhir`:
+
+```bash
+pip install -e '.[model,viz]'
+```
+
+```bash
+PYTHONPATH=src python3 -m model.gradient_boosting gambar --config configs/tesis.json
+```
+
+Tahap ini menulis 22 PNG ke `runs/tesis/model/gradient_boosting/gambar/` (Proses 0–6, berawalan
+`p0_` s.d. `p6_`). Gambar hanya membaca keluaran tahap sebelumnya lewat `load_model_csv` dan memakai
+ulang fungsi `model_akhir` untuk nilai harapan dan pratinjau. Kurva belajar (`p3_4` s.d. `p3_6`)
+melatih ulang model lipatan *walk-forward* dengan parameter Kunci-1 yang sama untuk mencatat log
+loss dan akurasi per iterasi; log loss validasi pada 100 dan 300 pohon dicek harus sama dengan skor
+*walk-forward*. Kurva ini deskriptif dan tidak dipakai untuk memilih jumlah pohon. Palet warna divalidasi dengan skill *dataviz* (tiga slot kategori pertama, aman buta warna).
 Tahap berikutnya menolak berjalan bila keluaran tahap sebelumnya belum ada. Opsi lain:
 
 - `--runs-dir` untuk folder run;
@@ -202,7 +275,13 @@ Tes (data sintetis; tes LightGBM dilewati bila pustakanya tidak ada):
 python3 -m unittest discover -s tests -v
 ```
 
-## 8. Hasil lama sebagai acuan dan cara membaca `bandingkan`
+## 9. Hasil lama sebagai acuan dan cara membaca `bandingkan`
+
+> **Sesudah Adendum 4.** Semua angka di bagian ini dihitung dengan fitur 14–15 lama. Sesudah run
+> ulang dengan fitur Adendum 4, yang diharapkan tetap sama hanyalah fitur f01–f13 dan seluruh
+> baseline B0/B1. Fitur 14–15, *walk-forward*, model akhir, τ, dan pratinjau aturan keputusan akan
+> berbeda; *m*rev dan *m*cont tidak bergantung pada fitur. Di `bandingkan_lama.md`, angka f14/f15
+> lama akan berstatus HANYA_LAMA dan yang baru HANYA_BARU.
 
 Angka berikut berasal dari `references/gradient_boosting_lama/` (22 Nov 2026, data sebelum adendum
 ATR; LightGBM 4.7.0, NumPy 2.2.6, Python 3.10).
@@ -233,6 +312,19 @@ event calib. Uji pemotongan pada 4 titik: 0 beda.
 
 Hasil gabungan: model − B0 = −0,0465 dan model − B1 = −0,0445 (B0 0,9698, B1 0,9678).
 
+**Model akhir dan kalibrasi (data 2024, n = 227).** d2_n100_m50 dilatih pada 1.841 event dev
+(*purging* 0) menjadi 300 pohon; SHA-256 berkas model `1c1f7ab4f00bce19…`.
+
+| Prediktor | *Log loss* | Brier |
+|---|---|---|
+| Model sebelum τ | 0,9356 | 0,5692 |
+| **Model sesudah τ = 1,0142** | **0,9355** | **0,5690** |
+| B0 | 0,9967 | 0,5948 |
+| B1 | 1,0013 | 0,5985 |
+
+**Aturan keputusan.** *m*rev = +0,5627R dan *m*cont = −0,2813R dari 385 event Netral dev;
+δ = 0,1R.
+
 **Membaca `bandingkan_lama.md`.** Setiap angka rekonsiliasi diberi status:
 
 | Status | Arti | Yang diharapkan |
@@ -244,21 +336,38 @@ Hasil gabungan: model − B0 = −0,0465 dan model − B1 = −0,0445 (B0 0,9698
 Hash sumber, lingkungan, versi, dan *commit* diabaikan karena memang pasti berbeda. Bila ada status
 BEDA, catat di sini angka mana yang berubah dan alasannya sebelum melanjutkan ke model akhir.
 
-**Hasil perhitungan ulang:** *(diisi sesudah dijalankan)*.
+**Hasil perhitungan ulang (24 Nov 2026).** Keempat tahap dijalankan ulang dengan data pipeline v1.1.0,
+Python 3.10.21, LightGBM 4.7.0, dan NumPy 2.2.6. Tidak ada status BEDA_KECIL maupun BEDA:
 
-## 9. Yang belum di repo
+| Berkas | IDENTIK | Lainnya |
+|---|---|---|
+| `fitur_rekonsiliasi.json` | 99 | 0 |
+| `pembanding_rekonsiliasi.json` | 181 | 0 |
+| `walk_forward_rekonsiliasi.json` | 197 | 0 |
+| `model_akhir_rekonsiliasi.json` | 583 | 0 |
 
-- Model akhir (RM-25): konfigurasi terpilih dilatih sekali pada seluruh dev.
-- Kalibrasi *temperature scaling* τ pada data 2024 (RM-26).
-- Parameter aturan keputusan *m*rev, *m*cont, dan δ = 0,1R (RM-27).
-- Kunci-2, eksekusi tunggal pada data uji, dan evaluasi RO1/RO2 + SHAP.
+Adendum ATR hanya mengubah 43 nilai f02/f12 pada 27 event dev 4 Jan – 9 Mar 2016, dan perubahannya
+ada di desimal ke-10 (≤ 10⁻⁹). `features_calib.csv`, kedua berkas OOF, berkas model, dan
+`model_akhir_calib.csv` byte-identik dengan hasil lama. Jadi angka 22 Nov 2026 tetap berlaku.
+
+## 10. Yang belum di repo
+
+- Run ulang tahap fitur → pembanding → *walk-forward* → model akhir dengan fitur Adendum 4. Sampai
+  itu dilakukan, tes "data asli" (`tests/test_gb_model_akhir.py`, `tests/test_gb_gambar.py`)
+  dilewati karena `features_dev.csv` di `runs/tesis` masih memakai daftar fitur lama.
+- Sesudah run ulang: perbarui angka acuan tes data asli yang bergantung pada fitur (konfigurasi
+  terpilih, τ, log loss, isi daun) dan Bagian 9 dari hasil baru.
+- Kunci-2: manifest semua ketetapan (model, τ, δ, pembanding, templat SHAP) + *commit hash*.
+- Eksekusi tunggal pada data uji dan evaluasi RO1/RO2 + SHAP.
 
 ## Asal kode
 
 | Modul baru | Asal (folder lama di luar repo) |
 |---|---|
-| `fitur.py`, `laporan_fitur.py` | `Pemodelan PDH-PDL/fitur.py`, `laporan_fitur.py` |
+| `fitur.py`, `laporan_fitur.py` | `Pemodelan PDH-PDL/fitur.py`, `laporan_fitur.py`; f14 dan f15 baru (Adendum 4, 27 Nov 2026) |
 | `pembanding.py` | `Pemodelan PDH-PDL/pembanding.py` |
 | `walk_forward.py` | `Pemodelan PDH-PDL/walk_forward.py` |
-| `kunci.py` | `Pemodelan PDH-PDL/common.py` (`load_kunci1_fitur`, `load_kunci1_rq2`) |
-| `tests/test_gb_*.py` | `Pemodelan PDH-PDL/tests/test_fitur.py`, `test_pembanding.py`, `test_walk_forward.py`, `test_kunci_rq2.py` |
+| `model_akhir.py`, `laporan_model_akhir.py` | `Pemodelan PDH-PDL/model_akhir.py` |
+| `gambar/` | Baru (24 Nov 2026); diagram reliabilitas mengikuti `gambar_reliabilitas` lama |
+| `kunci.py` | `Pemodelan PDH-PDL/common.py` (`load_kunci1_fitur`, `load_kunci1_rq2`); pemuat dan manifest Adendum 4 baru |
+| `tests/test_gb_*.py` | `Pemodelan PDH-PDL/tests/test_fitur.py`, `test_pembanding.py`, `test_walk_forward.py`, `test_model_akhir.py`, `test_kunci_rq2.py` |

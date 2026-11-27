@@ -1,0 +1,66 @@
+{
+  "adendum": 3,
+  "tanggal_kunci": "2026-11-25",
+  "dokumen": "ADENDUM_3.md",
+  "status_data_uji": "belum dibuka",
+  "berlaku_atas": ["kunci_1_rq2.json", "RENCANA_ANALISIS_RQ2.md"],
+  "tidak_berubah": [
+    "kunci_1.json",
+    "kunci_1_fitur.json",
+    "kunci_1_rq2.json: kelas, rq2_1 (kecuali B2), pendukung, teknis.lightgbm, teknis.toleransi_seri_logloss, teknis.temperature_rentang, seed"
+  ],
+  "penomoran_rq": {
+    "RQ1": "keterprediksian terhadap B0 dan B1 (Kunci-1: RQ2.1)",
+    "RQ2": "seleksi sentuhan setelah biaya terhadap S0 dan S1 (Kunci-1: analisis pendukung bagian 4 butir 3-5)"
+  },
+  "dihapus": {
+    "B2": "kunci_1_rq2.json: rq2_1.B2 dan unsur B2 pada rq2_1.baseline",
+    "kandidat_regresi_logistik": "kunci_1_rq2.json: teknis.logreg; pemilihan GB vs regresi logistik",
+    "rq2_2_plasebo": "kunci_1_rq2.json: rq2_2; SEED_PLASEBO",
+    "rq3_evaluasi_pengguna": "tidak menjadi bagian tesis",
+    "perbandingan_gb_lstm": "rencana bimbingan 19 November 2026 tidak dipakai"
+  },
+  "rq1": {
+    "metrik_utama": "log_loss",
+    "pembanding": ["B0", "B1"],
+    "bootstrap": "kunci_1_rq2.json: rq2_1.bootstrap (indeks ulangan bersama untuk B0 dan B1)",
+    "kriteria": "batas_atas_IK95 < 0 untuk B0 dan B1",
+    "metrik_pendukung_probabilistik": ["brier", "ece_per_kelas", "diagram_reliabilitas", "log_loss_per_level"],
+    "metrik_pendukung_klasifikasi": [
+      "confusion_matrix_3x3_argmax",
+      "precision_recall_f1_per_kelas",
+      "macro_f1",
+      "roc_auc_satu_lawan_semua",
+      "pr_auc_satu_lawan_semua",
+      "precision_rekomendasi_reversal_vs_titik_impas_b_per_a_plus_b"
+    ]
+  },
+  "rq2": {
+    "strategi": {
+      "SM": "aturan keputusan model, delta = kunci_1_rq2.json: pendukung.delta_utama",
+      "S0": "semua sentuhan sebagai reversal",
+      "S1": "reversal bila f13_wick_penolakan >= kunci_1_fitur.json: B1.theta, selain itu abstain"
+    },
+    "ukuran_utama": "rata-rata R bersih per event, abstain = 0",
+    "ukuran_deskriptif": ["R bersih per transaksi", "cakupan", "jumlah transaksi", "R kumulatif", "maximum drawdown (R)"],
+    "spread_usd": "kunci_1_rq2.json: pendukung.spread_usd",
+    "koefisien_biaya_R": {
+      "Reversal": "1 / (b * ATR_event)",
+      "Continuation": "1 / (a * ATR_event)",
+      "Abstain": 0
+    },
+    "spread_impas": {
+      "strategi": "S* = sum(R) / sum(c); tidak impas bila sum(R) <= 0",
+      "selisih": "S*_delta = delta_R_rata(0) / delta_c_rata"
+    },
+    "selisih": ["SM-S0", "SM-S1"],
+    "bootstrap": "kunci_1_rq2.json: rq2_1.bootstrap (indeks ulangan bersama untuk kedua selisih dan semua S)",
+    "tafsir_per_selisih": {
+      "lebih_baik": "batas_bawah_IK95 > 0",
+      "lebih_buruk": "batas_atas_IK95 < 0",
+      "tidak_dapat_disimpulkan": "interval mencakup 0"
+    },
+    "keputusan": "RQ2 didukung pada S hanya bila SM lebih_baik terhadap S0 dan S1 pada S; kesimpulan berupa rentang S, dibaca bersama S*_delta",
+    "koreksi_uji_jamak": "tidak ada; grid spread adalah sensitivitas atas satu hipotesis"
+  }
+}

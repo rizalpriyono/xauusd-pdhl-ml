@@ -1,0 +1,16 @@
+{
+  "dibuat_utc": "2026-11-24T18:35:42+00:00",
+  "keterangan": "Kunci-1 Adendum 3 (25 Nov 2026): B2, kandidat regresi logistik, uji plasebo, dan RQ3 dihapus; RQ2 menjadi pertanyaan utama. Manifest lama tidak ditimpa; lima berkas Kunci-1 lama tidak berubah (hash sama dengan MANIFEST_KUNCI_1.json).",
+  "manifest_sebelumnya": {
+    "MANIFEST_KUNCI_1.json": "f6e51cb3fa8e3cf50e69f54ba6819120bd8f2633bf825a174ffdda0ec3f1ce36"
+  },
+  "sha256": {
+    "kunci_1.json": "79312eb3c948c51f97350c539e140d888e2f71498ec03f863241e5687449b810",
+    "kunci_1_fitur.json": "a7fe1cb503a6763aba31eab1f9ef485121e99dbaa309fc6b9dd27b16b6559cac",
+    "kunci_1_rq2.json": "86e4f38c0a2d9c0d2e09fc157d15d4ea29c283006ae6afd1dee0e026970a8b15",
+    "KUNCI-1_parameter_label.md": "73f6c7e1445828ce0f648bffba09018576278aed96faabb0b0ebe1b4e7ecb56a",
+    "RENCANA_ANALISIS_RQ2.md": "82289f6e890b8fc8b84378795dee57e78a260ff4f76b4974bdfd83cba944aed7",
+    "ADENDUM_3.md": "3f03aa26b2501665eaf2b9b4660afce5b0e3e2267c59e92b956f8380322c85b2",
+    "kunci_1_adendum_3.json": "cbfa0d1fbe4e9131a6abeb35a528c380dd722a3d2917bc227bd1eb1f6f8cbf67"
+  }
+}

@@ -4,8 +4,11 @@ Tahap:
     fitur          tahap 1: 15 fitur point-in-time + laporan fitur
     pembanding     tahap 2: baseline non-model B0/B1 (akhir + OOF walk-forward)
     walk-forward   tahap 3: validasi walk-forward 8 konfigurasi LightGBM dan pemilihan konfigurasi
+    model-akhir    tahap 4: model akhir, kalibrasi τ, dan parameter aturan keputusan
     bandingkan     selisih rekonsiliasi baru terhadap hasil lama (references/gradient_boosting_lama/)
-    semua          fitur -> pembanding -> walk-forward -> bandingkan
+    semua          fitur -> pembanding -> walk-forward -> model-akhir -> bandingkan
+    gambar         22 visualisasi PNG dari keluaran tahap di atas (butuh matplotlib; tidak
+                   termasuk `semua`)
 
 Sebelum tahap apa pun: berkas Kunci-1 dicek terhadap manifest, a/b/T/k konfigurasi dicek terhadap
 Kunci-1, dan SHA-256 data masukan `runs/<nama>/data/` dicek terhadap `references/<nama>.json`.
@@ -23,13 +26,14 @@ from pdhl_data.common import TestDataLeak
 from pdhl_data.config import ConfigError, load_config
 from pdhl_data.pipeline import load_reference
 
-from . import bandingkan, fitur, jalur, kunci, laporan_fitur, pembanding, walk_forward
+from . import (bandingkan, fitur, gambar, jalur, kunci, laporan_fitur, model_akhir, pembanding,
+               walk_forward)
 
-URUTAN = ("fitur", "pembanding", "walk-forward", "bandingkan")
-TAHAP = URUTAN + ("semua",)
+URUTAN = ("fitur", "pembanding", "walk-forward", "model-akhir", "bandingkan")
+TAHAP = URUTAN + ("gambar", "semua")
 GALAT = (kunci.KunciError, jalur.DataInputBerbeda, fitur.AtrKosong, fitur.LookAheadError,
          bandingkan.AcuanLamaRusak, TestDataLeak, ConfigError, FileNotFoundError,
-         ModuleNotFoundError, ValueError)
+         ModuleNotFoundError, ValueError, RuntimeError)
 
 
 def _repo_dir(config_path):
@@ -45,6 +49,10 @@ def _jalankan(tahap, paths, k, sumber, acuan_lama, cfg_name):
         return pembanding.ringkas(pembanding.run_pembanding(paths, k, sumber))
     if tahap == "walk-forward":
         return walk_forward.ringkas(walk_forward.run_walk_forward(paths, k, sumber))
+    if tahap == "gambar":
+        return gambar.ringkas(gambar.run_gambar(paths, k))
+    if tahap == "model-akhir":
+        return model_akhir.ringkas(model_akhir.run_model_akhir(paths, k, sumber))
     return bandingkan.ringkas(bandingkan.run_bandingkan(paths, acuan_lama, cfg_name))
 
 
@@ -80,7 +88,7 @@ def jalankan(args):
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="python -m model.gradient_boosting",
                                  description="Pemodelan Gradient Boosting PDH/PDL: fitur, baseline, "
-                                             "walk-forward")
+                                             "walk-forward, model akhir")
     ap.add_argument("tahap", choices=TAHAP)
     ap.add_argument("--config", required=True, help="configs/<nama>.json")
     ap.add_argument("--runs-dir", type=Path, default=Path("runs"))

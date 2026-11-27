@@ -1,0 +1,955 @@
+{
+  "rm": "RM-25",
+  "kelas": [
+    "Reversal",
+    "Continuation",
+    "Netral"
+  ],
+  "lingkungan": {
+    "python": "3.10.21",
+    "lightgbm": "4.7.0",
+    "numpy": "2.2.6",
+    "platform": "macOS-26.6.2-arm64-arm-64bit"
+  },
+  "konfigurasi": {
+    "id": "d2_n100_m50",
+    "max_depth": 2,
+    "n_estimators": 100,
+    "min_child_samples": 50
+  },
+  "params": {
+    "objective": "multiclass",
+    "num_class": 3,
+    "learning_rate": 0.05,
+    "max_depth": 2,
+    "min_child_samples": 50,
+    "seed": 20261119,
+    "deterministic": true,
+    "num_threads": 1,
+    "verbose": -1
+  },
+  "jumlah_pohon": 300,
+  "kolom_fitur": [
+    "f01_jenis_level",
+    "f02_rentang_hari_sebelumnya",
+    "f03_jarak_level_open_sesi",
+    "f04_sesi=Asia",
+    "f04_sesi=London",
+    "f04_sesi=NewYork",
+    "f05_hari=Senin",
+    "f05_hari=Selasa",
+    "f05_hari=Rabu",
+    "f05_hari=Kamis",
+    "f05_hari=Jumat",
+    "f06_rezim_volatilitas",
+    "f07_momentum_pendekatan",
+    "f08_waktu_sejak_open_sesi",
+    "f09_posisi_close",
+    "f10_penetrasi",
+    "f11_jarak_ema50",
+    "f12_return_minggu",
+    "f13_wick_penolakan",
+    "f14_engulfing_d",
+    "f15_volume_relatif"
+  ],
+  "sumber_sha256": {
+    "features_dev.csv": "560f28560373b42661a2df178e3415653c4cf777bf3fbf310029e052564dc42b",
+    "labels_dev.csv": "f24afc900ce624e81c053d077fb52911d3c1871337422bb938248fdbd8394a59",
+    "features_calib.csv": "76d2c5b99d3ece7d7c5f6bc60c06cbf0bce1487dc316801c278bccc36d4d303b",
+    "labels_calib.csv": "17331a90d3b9f7c841cb6e7da60da0e3c3e59081c4612844548c753bc14932e5",
+    "walk_forward_oof_dev.csv": "862a5e4bc56e21cf861100a933ec6bb2651aacc498690f960c19cbb351b7cb6f",
+    "walk_forward_rekonsiliasi.json": "1b01f50fd087f5881b0bcb19c87a7cf6b60a69a452753eb6762fcb6782c03f69"
+  },
+  "kunci1_sha256_sesuai_manifest": {
+    "kunci_1.json": "79312eb3c948c51f97350c539e140d888e2f71498ec03f863241e5687449b810",
+    "kunci_1_fitur.json": "a7fe1cb503a6763aba31eab1f9ef485121e99dbaa309fc6b9dd27b16b6559cac",
+    "kunci_1_rq2.json": "86e4f38c0a2d9c0d2e09fc157d15d4ea29c283006ae6afd1dee0e026970a8b15"
+  },
+  "model_berkas": "model_akhir_lgbm.txt",
+  "model_sha256": "1c1f7ab4f00bce199a4372769c249155e3619ee8356fc6c25ed1f81ee7a8a09f",
+  "n_latih": 1841,
+  "n_purged": 0,
+  "n_calib": 227,
+  "dev_dalam_sampel": {
+    "log_loss": 0.8677234630707937,
+    "oof_walk_forward": 0.9232713972853817
+  },
+  "kalibrasi": {
+    "metode": "temperature scaling, p = softmax(z/τ)",
+    "tau": 1.0141510135468796,
+    "log_loss": 0.9355353940290387,
+    "iterasi": 45,
+    "rentang": [
+      0.05,
+      20.0
+    ],
+    "toleransi": 1e-08,
+    "di_batas": false,
+    "cek_grid": {
+      "n": 401,
+      "tau": 1.0150914037224685,
+      "log_loss": 0.9355355093087624
+    },
+    "sebelum": {
+      "n": 227,
+      "log_loss": 0.9355622015200702,
+      "brier": 0.5692399952062653,
+      "ece": {
+        "Reversal": 0.04694055334114256,
+        "Continuation": 0.03687191513519844,
+        "Netral": 0.04476853906782964
+      },
+      "reliabilitas": {
+        "Reversal": [
+          {
+            "bin": 0,
+            "batas": [
+              0.0,
+              0.1
+            ],
+            "n": 5,
+            "p_rerata": 0.08668647451642371,
+            "frek": 0.2
+          },
+          {
+            "bin": 1,
+            "batas": [
+              0.1,
+              0.2
+            ],
+            "n": 62,
+            "p_rerata": 0.1612863211972728,
+            "frek": 0.1935483870967742
+          },
+          {
+            "bin": 2,
+            "batas": [
+              0.2,
+              0.3
+            ],
+            "n": 140,
+            "p_rerata": 0.245868372160404,
+            "frek": 0.2785714285714286
+          },
+          {
+            "bin": 3,
+            "batas": [
+              0.3,
+              0.4
+            ],
+            "n": 19,
+            "p_rerata": 0.3198978343957772,
+            "frek": 0.47368421052631576
+          },
+          {
+            "bin": 4,
+            "batas": [
+              0.4,
+              0.5
+            ],
+            "n": 1,
+            "p_rerata": 0.41167914877128264,
+            "frek": 1.0
+          },
+          {
+            "bin": 5,
+            "batas": [
+              0.5,
+              0.6
+            ],
+            "n": 0,
+            "p_rerata": null,
+            "frek": null
+          },
+          {
+            "bin": 6,
+            "batas": [
+              0.6,
+              0.7
+            ],
+            "n": 0,
+            "p_rerata": null,
+            "frek": null
+          },
+          {
+            "bin": 7,
+            "batas": [
+              0.7,
+              0.8
+            ],
+            "n": 0,
+            "p_rerata": null,
+            "frek": null
+          },
+          {
+            "bin": 8,
+            "batas": [
+              0.8,
+              0.9
+            ],
+            "n": 0,
+            "p_rerata": null,
+            "frek": null
+          },
+          {
+            "bin": 9,
+            "batas": [
+              0.9,
+              1.0
+            ],
+            "n": 0,
+            "p_rerata": null,
+            "frek": null
+          }
+        ],
+        "Continuation": [
+          {
+            "bin": 0,
+            "batas": [
+              0.0,
+              0.1
+            ],
+            "n": 0,
+            "p_rerata": null,
+            "frek": null
+          },
+          {
+            "bin": 1,
+            "batas": [
+              0.1,
+              0.2
+            ],
+            "n": 0,
+            "p_rerata": null,
+            "frek": null
+          },
+          {
+            "bin": 2,
+            "batas": [
+              0.2,
+              0.3
+            ],
+            "n": 1,
+            "p_rerata": 0.2994794798323419,
+            "frek": 0.0
+          },
+          {
+            "bin": 3,
+            "batas": [
+              0.3,
+              0.4
+            ],
+            "n": 7,
+            "p_rerata": 0.3615283240682762,
+            "frek": 0.42857142857142855
+          },
+          {
+            "bin": 4,
+            "batas": [
+              0.4,
+              0.5
+            ],
+            "n": 47,
+            "p_rerata": 0.4598330643659368,
+            "frek": 0.48936170212765956
+          },
+          {
+            "bin": 5,
+            "batas": [
+              0.5,
+              0.6
+            ],
+            "n": 82,
+            "p_rerata": 0.5555728426926022,
+            "frek": 0.5487804878048781
+          },
+          {
+            "bin": 6,
+            "batas": [
+              0.6,
+              0.7
+            ],
+            "n": 73,
+            "p_rerata": 0.6470205965715701,
+            "frek": 0.6027397260273972
+          },
+          {
+            "bin": 7,
+            "batas": [
+              0.7,
+              0.8
+            ],
+            "n": 17,
+            "p_rerata": 0.7308129940598044,
+            "frek": 0.5882352941176471
+          },
+          {
+            "bin": 8,
+            "batas": [
+              0.8,
+              0.9
+            ],
+            "n": 0,
+            "p_rerata": null,
+            "frek": null
+          },
+          {
+            "bin": 9,
+            "batas": [
+              0.9,
+              1.0
+            ],
+            "n": 0,
+            "p_rerata": null,
+            "frek": null
+          }
+        ],
+        "Netral": [
+          {
+            "bin": 0,
+            "batas": [
+              0.0,
+              0.1
+            ],
+            "n": 49,
+            "p_rerata": 0.07136756593650026,
+            "frek": 0.061224489795918366
+          },
+          {
+            "bin": 1,
+            "batas": [
+              0.1,
+              0.2
+            ],
+            "n": 76,
+            "p_rerata": 0.14107524630095972,
+            "frek": 0.06578947368421052
+          },
+          {
+            "bin": 2,
+            "batas": [
+              0.2,
+              0.3
+            ],
+            "n": 52,
+            "p_rerata": 0.2548291518021685,
+            "frek": 0.2692307692307692
+          },
+          {
+            "bin": 3,
+            "batas": [
+              0.3,
+              0.4
+            ],
+            "n": 37,
+            "p_rerata": 0.3423673801293587,
+            "frek": 0.3783783783783784
+          },
+          {
+            "bin": 4,
+            "batas": [
+              0.4,
+              0.5
+            ],
+            "n": 12,
+            "p_rerata": 0.44608336448131475,
+            "frek": 0.3333333333333333
+          },
+          {
+            "bin": 5,
+            "batas": [
+              0.5,
+              0.6
+            ],
+            "n": 1,
+            "p_rerata": 0.5094375033591303,
+            "frek": 0.0
+          },
+          {
+            "bin": 6,
+            "batas": [
+              0.6,
+              0.7
+            ],
+            "n": 0,
+            "p_rerata": null,
+            "frek": null
+          },
+          {
+            "bin": 7,
+            "batas": [
+              0.7,
+              0.8
+            ],
+            "n": 0,
+            "p_rerata": null,
+            "frek": null
+          },
+          {
+            "bin": 8,
+            "batas": [
+              0.8,
+              0.9
+            ],
+            "n": 0,
+            "p_rerata": null,
+            "frek": null
+          },
+          {
+            "bin": 9,
+            "batas": [
+              0.9,
+              1.0
+            ],
+            "n": 0,
+            "p_rerata": null,
+            "frek": null
+          }
+        ]
+      }
+    },
+    "sesudah": {
+      "n": 227,
+      "log_loss": 0.9355353940290387,
+      "brier": 0.5689955404785515,
+      "ece": {
+        "Reversal": 0.045299376664794805,
+        "Continuation": 0.0275625280395914,
+        "Netral": 0.0454257115193995
+      },
+      "reliabilitas": {
+        "Reversal": [
+          {
+            "bin": 0,
+            "batas": [
+              0.0,
+              0.1
+            ],
+            "n": 4,
+            "p_rerata": 0.0855125907333669,
+            "frek": 0.25
+          },
+          {
+            "bin": 1,
+            "batas": [
+              0.1,
+              0.2
+            ],
+            "n": 61,
+            "p_rerata": 0.16098428525314692,
+            "frek": 0.18032786885245902
+          },
+          {
+            "bin": 2,
+            "batas": [
+              0.2,
+              0.3
+            ],
+            "n": 140,
+            "p_rerata": 0.24605898488278097,
+            "frek": 0.2785714285714286
+          },
+          {
+            "bin": 3,
+            "batas": [
+              0.3,
+              0.4
+            ],
+            "n": 21,
+            "p_rerata": 0.31883523960241134,
+            "frek": 0.47619047619047616
+          },
+          {
+            "bin": 4,
+            "batas": [
+              0.4,
+              0.5
+            ],
+            "n": 1,
+            "p_rerata": 0.4111518184761762,
+            "frek": 1.0
+          },
+          {
+            "bin": 5,
+            "batas": [
+              0.5,
+              0.6
+            ],
+            "n": 0,
+            "p_rerata": null,
+            "frek": null
+          },
+          {
+            "bin": 6,
+            "batas": [
+              0.6,
+              0.7
+            ],
+            "n": 0,
+            "p_rerata": null,
+            "frek": null
+          },
+          {
+            "bin": 7,
+            "batas": [
+              0.7,
+              0.8
+            ],
+            "n": 0,
+            "p_rerata": null,
+            "frek": null
+          },
+          {
+            "bin": 8,
+            "batas": [
+              0.8,
+              0.9
+            ],
+            "n": 0,
+            "p_rerata": null,
+            "frek": null
+          },
+          {
+            "bin": 9,
+            "batas": [
+              0.9,
+              1.0
+            ],
+            "n": 0,
+            "p_rerata": null,
+            "frek": null
+          }
+        ],
+        "Continuation": [
+          {
+            "bin": 0,
+            "batas": [
+              0.0,
+              0.1
+            ],
+            "n": 0,
+            "p_rerata": null,
+            "frek": null
+          },
+          {
+            "bin": 1,
+            "batas": [
+              0.1,
+              0.2
+            ],
+            "n": 0,
+            "p_rerata": null,
+            "frek": null
+          },
+          {
+            "bin": 2,
+            "batas": [
+              0.2,
+              0.3
+            ],
+            "n": 0,
+            "p_rerata": null,
+            "frek": null
+          },
+          {
+            "bin": 3,
+            "batas": [
+              0.3,
+              0.4
+            ],
+            "n": 8,
+            "p_rerata": 0.3537167182697149,
+            "frek": 0.375
+          },
+          {
+            "bin": 4,
+            "batas": [
+              0.4,
+              0.5
+            ],
+            "n": 48,
+            "p_rerata": 0.4590257395071306,
+            "frek": 0.4791666666666667
+          },
+          {
+            "bin": 5,
+            "batas": [
+              0.5,
+              0.6
+            ],
+            "n": 82,
+            "p_rerata": 0.5538222748423348,
+            "frek": 0.5487804878048781
+          },
+          {
+            "bin": 6,
+            "batas": [
+              0.6,
+              0.7
+            ],
+            "n": 74,
+            "p_rerata": 0.645257742971716,
+            "frek": 0.6216216216216216
+          },
+          {
+            "bin": 7,
+            "batas": [
+              0.7,
+              0.8
+            ],
+            "n": 15,
+            "p_rerata": 0.7304775727005864,
+            "frek": 0.5333333333333333
+          },
+          {
+            "bin": 8,
+            "batas": [
+              0.8,
+              0.9
+            ],
+            "n": 0,
+            "p_rerata": null,
+            "frek": null
+          },
+          {
+            "bin": 9,
+            "batas": [
+              0.9,
+              1.0
+            ],
+            "n": 0,
+            "p_rerata": null,
+            "frek": null
+          }
+        ],
+        "Netral": [
+          {
+            "bin": 0,
+            "batas": [
+              0.0,
+              0.1
+            ],
+            "n": 48,
+            "p_rerata": 0.07258901363614832,
+            "frek": 0.0625
+          },
+          {
+            "bin": 1,
+            "batas": [
+              0.1,
+              0.2
+            ],
+            "n": 77,
+            "p_rerata": 0.14255592331094302,
+            "frek": 0.06493506493506493
+          },
+          {
+            "bin": 2,
+            "batas": [
+              0.2,
+              0.3
+            ],
+            "n": 52,
+            "p_rerata": 0.25610324748600966,
+            "frek": 0.2692307692307692
+          },
+          {
+            "bin": 3,
+            "batas": [
+              0.3,
+              0.4
+            ],
+            "n": 37,
+            "p_rerata": 0.3426209716144937,
+            "frek": 0.3783783783783784
+          },
+          {
+            "bin": 4,
+            "batas": [
+              0.4,
+              0.5
+            ],
+            "n": 12,
+            "p_rerata": 0.44482019306892795,
+            "frek": 0.3333333333333333
+          },
+          {
+            "bin": 5,
+            "batas": [
+              0.5,
+              0.6
+            ],
+            "n": 1,
+            "p_rerata": 0.5070602676075875,
+            "frek": 0.0
+          },
+          {
+            "bin": 6,
+            "batas": [
+              0.6,
+              0.7
+            ],
+            "n": 0,
+            "p_rerata": null,
+            "frek": null
+          },
+          {
+            "bin": 7,
+            "batas": [
+              0.7,
+              0.8
+            ],
+            "n": 0,
+            "p_rerata": null,
+            "frek": null
+          },
+          {
+            "bin": 8,
+            "batas": [
+              0.8,
+              0.9
+            ],
+            "n": 0,
+            "p_rerata": null,
+            "frek": null
+          },
+          {
+            "bin": 9,
+            "batas": [
+              0.9,
+              1.0
+            ],
+            "n": 0,
+            "p_rerata": null,
+            "frek": null
+          }
+        ]
+      }
+    }
+  },
+  "pembanding_calib": {
+    "B0": {
+      "n": 227,
+      "log_loss": 0.9967180290839815,
+      "brier": 0.5947700287197334,
+      "ece": {
+        "Reversal": 0.04824996949082085,
+        "Continuation": 0.015335947950140483,
+        "Netral": 0.032914021540676824
+      }
+    },
+    "B1": {
+      "n": 227,
+      "log_loss": 1.0012969457156045,
+      "brier": 0.5985400835792168,
+      "ece": {
+        "Reversal": 0.04810476693127854,
+        "Continuation": 0.04957307358259057,
+        "Netral": 0.03346841510265508
+      }
+    }
+  },
+  "per_level_calib": {
+    "PDH": {
+      "n": 129,
+      "model_sebelum": 0.9017523101782203,
+      "model_sesudah": 0.9021451929749894,
+      "B0": 0.9607821080646466,
+      "B1": 0.9616005022041155
+    },
+    "PDL": {
+      "n": 98,
+      "model_sebelum": 0.9800670584904652,
+      "model_sesudah": 0.979487801538962,
+      "B0": 1.0440214353237198,
+      "B1": 1.0535504274807297
+    }
+  },
+  "pembanding_dev": {
+    "B0": {
+      "n": 1841,
+      "jumlah": {
+        "Reversal": 414,
+        "Continuation": 1042,
+        "Netral": 385
+      },
+      "peluang": {
+        "Reversal": 0.22487778381314502,
+        "Continuation": 0.5659967409016838,
+        "Netral": 0.20912547528517111
+      }
+    },
+    "B1": {
+      "terpenuhi": {
+        "n": 173,
+        "jumlah": {
+          "Reversal": 42,
+          "Continuation": 83,
+          "Netral": 48
+        },
+        "laplace": false,
+        "peluang": {
+          "Reversal": 0.24277456647398843,
+          "Continuation": 0.4797687861271676,
+          "Netral": 0.2774566473988439
+        }
+      },
+      "tidak_terpenuhi": {
+        "n": 1668,
+        "jumlah": {
+          "Reversal": 372,
+          "Continuation": 959,
+          "Netral": 337
+        },
+        "laplace": false,
+        "peluang": {
+          "Reversal": 0.22302158273381295,
+          "Continuation": 0.5749400479616307,
+          "Netral": 0.20203836930455635
+        }
+      }
+    }
+  },
+  "aturan_keputusan": {
+    "a": 2.0,
+    "b": 1.0,
+    "n_netral": 385,
+    "m_rev": 0.5626710944392209,
+    "m_cont": -0.28133554721870135,
+    "sumber_m": "event Netral data latih dev sesudah purging di 2024-01-01 (sama dengan seluruh dev bila purging 0)",
+    "delta": 0.1,
+    "delta_grid": [
+      0.0,
+      0.1,
+      0.2,
+      0.3
+    ],
+    "aturan_seri": "Karena R_cont = −(b/a)·R_rev di setiap event, E(cont) = −(b/a)·E(rev); seri hanya terjadi bila keduanya 0 dan diperlakukan sebagai abstain (hanya relevan untuk δ = 0)."
+  },
+  "pratinjau_calib": {
+    "catatan": "Deskriptif saja: τ diestimasi pada data 2024 yang sama, R kotor tanpa biaya spread, n kecil. Tidak dipakai untuk memilih δ atau parameter lain; evaluasi RO2 resmi hanya pada data uji.",
+    "SM": [
+      {
+        "delta": 0.0,
+        "n": 227,
+        "n_rev": 119,
+        "n_cont": 108,
+        "n_abstain": 0,
+        "cakupan": 1.0,
+        "r_per_event": 0.023100410323788536,
+        "r_per_rekomendasi": 0.023100410323788536
+      },
+      {
+        "delta": 0.1,
+        "n": 227,
+        "n_rev": 61,
+        "n_cont": 24,
+        "n_abstain": 142,
+        "cakupan": 0.3744493392070485,
+        "r_per_event": 0.10230352448458152,
+        "r_per_rekomendasi": 0.2732105889176471
+      },
+      {
+        "delta": 0.2,
+        "n": 227,
+        "n_rev": 20,
+        "n_cont": 2,
+        "n_abstain": 205,
+        "cakupan": 0.09691629955947137,
+        "r_per_event": 0.02570410704096916,
+        "r_per_rekomendasi": 0.26521964992272723
+      },
+      {
+        "delta": 0.3,
+        "n": 227,
+        "n_rev": 7,
+        "n_cont": 0,
+        "n_abstain": 220,
+        "cakupan": 0.030837004405286344,
+        "r_per_event": 0.01449029905770925,
+        "r_per_rekomendasi": 0.4698996980142857
+      }
+    ],
+    "S0": {
+      "n": 227,
+      "n_rev": 227,
+      "n_cont": 0,
+      "n_abstain": 0,
+      "cakupan": 1.0,
+      "r_per_event": 0.08186482257533037,
+      "r_per_rekomendasi": 0.08186482257533037
+    },
+    "S1": {
+      "n": 227,
+      "n_rev": 23,
+      "n_cont": 0,
+      "n_abstain": 204,
+      "cakupan": 0.1013215859030837,
+      "r_per_event": -0.023739062556387667,
+      "r_per_rekomendasi": -0.2342942261
+    }
+  },
+  "cakupan_oof_dev": {
+    "catatan": "Peluang OOF walk-forward konfigurasi terpilih 2019–2023 (tanpa τ, model per lipatan); m_rev/m_cont dari seluruh Netral dev ikut memuat tahun validasi. Deskriptif, R kotor tanpa biaya.",
+    "SM": [
+      {
+        "delta": 0.0,
+        "n": 1152,
+        "n_rev": 580,
+        "n_cont": 572,
+        "n_abstain": 0,
+        "cakupan": 1.0,
+        "r_per_event": 0.0029910058216145977,
+        "r_per_rekomendasi": 0.0029910058216145977
+      },
+      {
+        "delta": 0.1,
+        "n": 1152,
+        "n_rev": 379,
+        "n_cont": 219,
+        "n_abstain": 554,
+        "cakupan": 0.5190972222222222,
+        "r_per_event": 0.01352073164670137,
+        "r_per_rekomendasi": 0.026046626851170533
+      },
+      {
+        "delta": 0.2,
+        "n": 1152,
+        "n_rev": 211,
+        "n_cont": 27,
+        "n_abstain": 914,
+        "cakupan": 0.2065972222222222,
+        "r_per_event": 0.0005557756032986108,
+        "r_per_rekomendasi": 0.002690140735294116
+      },
+      {
+        "delta": 0.3,
+        "n": 1152,
+        "n_rev": 112,
+        "n_cont": 2,
+        "n_abstain": 1038,
+        "cakupan": 0.09895833333333333,
+        "r_per_event": 0.022882472738368048,
+        "r_per_rekomendasi": 0.23123340872456133
+      }
+    ],
+    "S0": {
+      "n": 1152,
+      "n_rev": 1152,
+      "n_cont": 0,
+      "n_abstain": 0,
+      "cakupan": 1.0,
+      "r_per_event": -0.026575467657812504,
+      "r_per_rekomendasi": -0.026575467657812504
+    },
+    "S1": {
+      "n": 1152,
+      "n_rev": 110,
+      "n_cont": 0,
+      "n_abstain": 1042,
+      "cakupan": 0.0954861111111111,
+      "r_per_event": 0.013016517406423607,
+      "r_per_rekomendasi": 0.13631843683818176
+    }
+  }
+}

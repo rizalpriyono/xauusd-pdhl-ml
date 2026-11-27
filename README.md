@@ -89,15 +89,17 @@ Kolom dan aturan lengkap ada di [docs/SPESIFIKASI_DATA.md](docs/SPESIFIKASI_DATA
 
 ## Pemodelan Gradient Boosting
 
-Kode di `src/model/gradient_boosting/` menjalankan tiga tahap pertama pemodelan pada `runs/tesis/data/`
-dan menulis hasilnya ke `runs/tesis/model/gradient_boosting/{data,output}/`:
+Kode di `src/model/gradient_boosting/` menjalankan empat tahap pemodelan pada `runs/tesis/data/` dan
+menulis hasilnya ke `runs/tesis/model/gradient_boosting/{data,output,model}/`:
 
 | Tahap | Perintah | Isi |
 |---|---|---|
 | 1 | `fitur` | 15 fitur *point-in-time* (dev + calib), uji pemotongan, laporan fitur |
 | 2 | `pembanding` | Baseline B0 (frekuensi kelas) dan B1 (*wick* ≥ 2/3): akhir + OOF 2019–2023 |
 | 3 | `walk-forward` | 8 konfigurasi LightGBM × 5 lipatan, pilih *log loss* OOF terkecil |
+| 4 | `model-akhir` | Latih konfigurasi terpilih sekali pada dev, kalibrasi τ pada 2024, *m*rev/*m*cont dan δ |
 | – | `bandingkan` | Selisih angka terhadap hasil lama (`references/gradient_boosting_lama/`) |
+| – | `gambar` | 22 visualisasi PNG untuk dokumentasi (tidak termasuk `semua`; butuh `.[viz]`) |
 
 ```bash
 pip install -e '.[model]'
@@ -107,12 +109,23 @@ pip install -e '.[model]'
 PYTHONPATH=src python3 -m model.gradient_boosting semua --config configs/tesis.json
 ```
 
-- Parameter dibaca dari salinan Kunci-1 di `configs/kunci_1/`, yang dicek terhadap manifest SHA-256.
+- Parameter dibaca dari salinan Kunci-1 di `configs/kunci_1/`, yang dicek terhadap manifest SHA-256
+  (manifest dasar dan manifest Adendum 4).
+- Fitur 13–15 mengikuti Kunci-1 Adendum 4 (25 Nov 2026): f13 *wick* penolakan, f14 CMF-21 bertanda
+  *d*, dan f15 *permutation entropy* 48 *return*. Kode menolak berjalan bila nama atau jendela
+  fitur berbeda dari `kunci_1_adendum_4.json`.
 - Data masukan dicek terhadap `references/tesis.json`.
 - Bar tanpa `atr14_h1` atau event tanpa `atr14_d_prev` langsung ditolak (data pipeline < 1.1.0).
-- Tahap fitur dan baseline hanya memakai stdlib; LightGBM hanya dibutuhkan tahap *walk-forward*.
+- Tahap fitur dan baseline hanya memakai stdlib; LightGBM hanya dibutuhkan tahap *walk-forward* dan
+  model akhir. Tahap `gambar` butuh matplotlib (`pip install -e '.[model,viz]'`) dan menulis ke
+  `runs/tesis/model/gradient_boosting/gambar/`.
 
-Proses, rumus, dan hasil lama sebagai acuan ada di
+**Status 27 Nov 2026:** kode fitur sudah mengikuti Adendum 4, tetapi keempat tahap belum dijalankan
+ulang. Isi `runs/tesis/model/gradient_boosting/` masih hasil 24 Nov 2026 dengan fitur 14–15 lama
+(*engulfing*, volume relatif) dan akan digantikan hasil run ulang.
+
+Hasil hitung ulang 24 Nov 2026 (fitur lama) identik dengan hasil lama 22 Nov 2026 (583/583 angka model
+akhir, berkas model byte-identik). Proses, rumus, dan hasilnya ada di
 [docs/PEMODELAN_GRADIENT_BOOSTING.md](docs/PEMODELAN_GRADIENT_BOOSTING.md).
 
 ## Pemodelan LSTM

@@ -1,7 +1,7 @@
 """Folder masukan/keluaran pemodelan Gradient Boosting dan cek data masukan.
 
 Masukan dibaca dari `runs/<config>/data/` (keluaran pipeline `pdhl_data`). Keluaran ditulis ke
-`runs/<config>/model/gradient_boosting/{data,output}/`, sehingga folder `data/` pipeline, yang
+`runs/<config>/model/gradient_boosting/{data,output,model}/`, sehingga folder `data/` pipeline, yang
 dicatat di manifest kunci uji, tidak pernah ditulisi kode pemodelan.
 
 Sebelum tahap apa pun dijalankan, SHA-256 data masukan dicocokkan dengan `references/<config>.json`.
@@ -43,6 +43,14 @@ class ModelPaths:
     @property
     def output(self):
         return self.root / "output"
+
+    @property
+    def model(self):
+        return self.root / "model"
+
+    @property
+    def gambar(self):
+        return self.root / "gambar"
 
 
 def model_paths(cfg, runs_dir):

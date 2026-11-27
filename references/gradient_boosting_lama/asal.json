@@ -1,11 +1,12 @@
 {
   "config": "tesis",
-  "keterangan": "Rekonsiliasi lama RM-22 s.d. RM-24 (Pemodelan PDH-PDL/output/, 22 Nov 2026), dihitung dari data pipeline sebelum adendum ATR 2026-11-24 (pdhl_data < 1.1.0).",
+  "keterangan": "Rekonsiliasi lama RM-22 s.d. RM-27 (Pemodelan PDH-PDL/output/, 22 Nov 2026), dihitung dari data pipeline sebelum adendum ATR 2026-11-24 (pdhl_data < 1.1.0).",
   "dihitung_pada": "2026-11-22",
   "sumber": "Pemodelan PDH-PDL/output/",
   "sha256": {
     "fitur_rekonsiliasi.json": "2b03ecf9fdb9b281a1a227a292fe063dba5f15e7b1cc064c7b8d823a96a760f1",
     "pembanding_rekonsiliasi.json": "090ef9bede90be406305a777dcb0a89783cf949d8924bb275fa37bfa6ae9d090",
-    "walk_forward_rekonsiliasi.json": "1b01f50fd087f5881b0bcb19c87a7cf6b60a69a452753eb6762fcb6782c03f69"
+    "walk_forward_rekonsiliasi.json": "1b01f50fd087f5881b0bcb19c87a7cf6b60a69a452753eb6762fcb6782c03f69",
+    "model_akhir_rekonsiliasi.json": "b809da8e0bf4ec31457fcc02af216841cc84fb9d5603a6854d7eecee1c182043"
   }
 }
