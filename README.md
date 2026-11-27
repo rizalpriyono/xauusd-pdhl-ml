@@ -120,13 +120,12 @@ PYTHONPATH=src python3 -m model.gradient_boosting semua --config configs/tesis.j
   model akhir. Tahap `gambar` butuh matplotlib (`pip install -e '.[model,viz]'`) dan menulis ke
   `runs/tesis/model/gradient_boosting/gambar/`.
 
-**Status 27 Nov 2026:** kode fitur sudah mengikuti Adendum 4, tetapi keempat tahap belum dijalankan
-ulang. Isi `runs/tesis/model/gradient_boosting/` masih hasil 24 Nov 2026 dengan fitur 14–15 lama
-(*engulfing*, volume relatif) dan akan digantikan hasil run ulang.
-
-Hasil hitung ulang 24 Nov 2026 (fitur lama) identik dengan hasil lama 22 Nov 2026 (583/583 angka model
-akhir, berkas model byte-identik). Proses, rumus, dan hasilnya ada di
-[docs/PEMODELAN_GRADIENT_BOOSTING.md](docs/PEMODELAN_GRADIENT_BOOSTING.md).
+**Status 27 Nov 2026:** keempat tahap sudah dijalankan ulang dengan fitur Adendum 4. Konfigurasi
+terpilih tetap `d2_n100_m50`, dengan log loss OOF 2019–2023 0,9282 (model − B0 −0,0416, model − B1
+−0,0396). Nilai τ = 1,0100, dan log loss 2024 sesudah τ 0,9351. Baseline B0/B1, fitur f01–f13,
+*m*rev, dan *m*cont identik dengan hasil lama. Hasil dengan fitur 14–15 lama (*engulfing*, volume
+relatif; 24 Nov 2026) disalin ke `runs/tesis/model/gradient_boosting_fitur_lama_20261124/`. Proses,
+rumus, dan hasilnya ada di [docs/PEMODELAN_GRADIENT_BOOSTING.md](docs/PEMODELAN_GRADIENT_BOOSTING.md).
 
 ## Pemodelan LSTM
 

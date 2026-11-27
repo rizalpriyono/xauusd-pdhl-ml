@@ -114,8 +114,8 @@ def sebaran_fitur(D, plt, path):
             ax.set_xticks(unik, [bulat(u) if u >= 0 else "−" + bulat(-u) for u in unik])
         ax.tick_params(labelsize=7)
         ax.set_yticks([])
-        if len(unik) > 5:
-            format_sumbu(ax, 1, "x")
+        if len(unik) > 5:                        # rentang sempit (mis. f15 PE) butuh 2 desimal
+            format_sumbu(ax, 2 if hi - lo < 0.3 else 1, "x")
     for ax in list(axs.flat)[len(data.NUMERIK):]:
         ax.axis("off")
     h, l = axs.flat[0].get_legend_handles_labels()

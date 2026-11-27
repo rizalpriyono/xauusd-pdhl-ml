@@ -215,8 +215,8 @@ class TestGambarDataAsli(unittest.TestCase):
     def test_struktur_model(self):
         s = data.struktur_model(self.D["model_path"])
         self.assertEqual(s["jumlah_pohon"], 300)
-        self.assertEqual(len(s["isi_daun"]), 1152)          # 252 pohon × 4 daun + 48 × 3
-        self.assertEqual(sum(1 for c in s["isi_daun"] if c < 50), 15)
+        self.assertEqual(len(s["isi_daun"]), 1161)          # 261 pohon × 4 daun + 39 × 3
+        self.assertEqual(sum(1 for c in s["isi_daun"] if c < 50), 11)   # run Adendum 4
         self.assertEqual(set(s["gain"]) - {"f04_sesi", "f05_hari"},
                          set(data.NUMERIK))           # semua 15 fitur terpakai
 

@@ -11,12 +11,13 @@ Dokumen ini menjelaskan empat tahap pemodelan *gradient boosting* (LightGBM) di
 Rujukan pasal mengikuti *Proposal Final v2*. Rancangan lengkapnya ada di
 `Metodologi Pemodelan ML PDH-PDL.md` (di luar repo).
 
-> **Status (27 Nov 2026).** Kode tahap fitur sudah mengikuti Kunci-1 Adendum 4 (25 Nov 2026):
-> fitur 14 = CMF-21 bertanda *d* dan fitur 15 = *permutation entropy* 48 *return* (Bagian 3).
-> **Keempat tahap belum dijalankan ulang dengan fitur baru.** Keluaran di
-> `runs/tesis/model/gradient_boosting/` dan semua angka di Bagian 9 masih berasal dari run
-> 24 Nov 2026 dengan fitur 14–15 lama (*engulfing*, volume relatif), dan akan digantikan hasil run
-> ulang. Kunci-2, eksekusi tunggal pada data uji, dan evaluasi belum dimulai.
+> **Status (27 Nov 2026).** Keempat tahap sudah dijalankan ulang dengan fitur Kunci-1 Adendum 4
+> (25 Nov 2026): fitur 14 = CMF-21 bertanda *d* dan fitur 15 = *permutation entropy* 48 *return*
+> (Bagian 3). Keluaran di `runs/tesis/model/gradient_boosting/` dan angka di Bagian 9.1 berasal dari
+> run ini. Hasil dengan fitur 14–15 lama (*engulfing*, volume relatif; 22–24 Nov 2026) menjadi
+> catatan di Bagian 9.2, dan salinan lengkapnya ada di
+> `runs/tesis/model/gradient_boosting_fitur_lama_20261124/`. Kunci-2, eksekusi tunggal pada data
+> uji, dan evaluasi belum dimulai.
 
 ## 1. Kenapa diulang dari awal
 
@@ -275,13 +276,73 @@ Tes (data sintetis; tes LightGBM dilewati bila pustakanya tidak ada):
 python3 -m unittest discover -s tests -v
 ```
 
-## 9. Hasil lama sebagai acuan dan cara membaca `bandingkan`
+## 9. Hasil dan cara membaca `bandingkan`
 
-> **Sesudah Adendum 4.** Semua angka di bagian ini dihitung dengan fitur 14–15 lama. Sesudah run
-> ulang dengan fitur Adendum 4, yang diharapkan tetap sama hanyalah fitur f01–f13 dan seluruh
-> baseline B0/B1. Fitur 14–15, *walk-forward*, model akhir, τ, dan pratinjau aturan keputusan akan
-> berbeda; *m*rev dan *m*cont tidak bergantung pada fitur. Di `bandingkan_lama.md`, angka f14/f15
-> lama akan berstatus HANYA_LAMA dan yang baru HANYA_BARU.
+### 9.1 Hasil run Adendum 4 (27 Nov 2026)
+
+Pipeline data dijalankan ulang lebih dulu (`19/19 OK`; event, label, dan kunci uji tidak berubah),
+lalu `semua` dengan Python 3.10.21, LightGBM 4.7.0, NumPy 2.2.6, dan SciPy 1.15.3. Data uji tidak
+dibaca.
+
+**Fitur.** 1.841 event dev dan 227 calib, 15 fitur tanpa nilai kosong. Uji pemotongan pada 4 titik:
+0 beda. Rata-rata f14 CMF-21 0,064 (dev) dan 0,083 (calib); f15 PE-48 0,978 dan 0,979. Korelasi
+|r| tertinggi f14 dengan fitur lain 0,31 (f11); f15 praktis tidak berkorelasi dengan fitur lain
+(|r| ≤ 0,04).
+
+**Baseline B0/B1.** Identik dengan hasil lama (181/181 angka rekonsiliasi), karena tidak bergantung
+pada fitur model. OOF gabungan B0 0,9698 dan B1 0,9678.
+
+**Walk-forward (log loss OOF 2019–2023, n = 1.152).**
+
+| Konfigurasi | Log loss | Peringkat | Fitur lama |
+|---|---|---|---|
+| **d2_n100_m50** | **0,9282** | 1 (terpilih) | 0,9233 |
+| d2_n100_m20 | 0,9296 | 2 | 0,9278 |
+| d3_n100_m50 | 0,9311 | 3 | 0,9302 |
+| d3_n100_m20 | 0,9344 | 4 | 0,9355 |
+| d2_n300_m50 | 0,9541 | 5 | 0,9476 |
+| d2_n300_m20 | 0,9569 | 6 | 0,9513 |
+| d3_n300_m50 | 0,9867 | 7 | 0,9739 |
+| d3_n300_m20 | 1,0025 | 8 | 1,0008 |
+
+Hasil gabungan: model − B0 = −0,0416 dan model − B1 = −0,0396; model lebih baik daripada B0 dan B1
+di kelima tahun validasi. Konfigurasi terpilih dan urutan peringkat sama dengan fitur lama.
+
+**Model akhir dan kalibrasi (data 2024, n = 227).** d2_n100_m50 dilatih pada 1.841 event dev
+(*purging* 0) menjadi 300 pohon; SHA-256 berkas model `ff3815fc53c07a62…`; log loss dalam-sampel
+0,8657.
+
+| Prediktor | *Log loss* | Brier |
+|---|---|---|
+| Model sebelum τ | 0,9351 | 0,5682 |
+| **Model sesudah τ = 1,0100** | **0,9351** | **0,5680** |
+| B0 | 0,9967 | 0,5948 |
+| B1 | 1,0013 | 0,5985 |
+
+**Aturan keputusan.** *m*rev = +0,5627R dan *m*cont = −0,2813R dari 385 event Netral dev (tidak
+berubah); δ = 0,1R. Pratinjau SM δ = 0,1 (deskriptif, R kotor): calib 2024 cakupan 37,9%,
++0,1877R per rekomendasi; OOF 2019–2023 cakupan 48,0%, +0,0065R per rekomendasi.
+
+**`bandingkan_lama.md`.**
+
+| Berkas | IDENTIK | BEDA | HANYA_LAMA | HANYA_BARU |
+|---|---|---|---|---|
+| `fitur_rekonsiliasi.json` | 85 | 0 | 14 | 10 |
+| `pembanding_rekonsiliasi.json` | 181 | 0 | 0 | 0 |
+| `walk_forward_rekonsiliasi.json` | 128 | 69 | 0 | 0 |
+| `model_akhir_rekonsiliasi.json` | 427 | 156 | 0 | 1 |
+
+Tidak ada BEDA_KECIL. Semua angka f01–f13 dan B0/B1 IDENTIK. HANYA_LAMA/HANYA_BARU pada fitur adalah
+angka f14/f15 lama dan baru, ditambah hash manifest Kunci-1 yang kini ikut dicatat. BEDA pada
+*walk-forward* dan model akhir memang diharapkan dari penggantian fitur.
+
+**Determinisme.** `semua` dijalankan dua kali. `features_{dev,calib}.csv`, kedua berkas OOF,
+`model_akhir_calib.csv`, dan berkas model byte-identik antar-run.
+
+### 9.2 Hasil fitur lama (22–24 Nov 2026) sebagai acuan
+
+> Semua angka di subbagian ini dihitung dengan fitur 14–15 lama. Yang tetap sama sesudah
+> Adendum 4 hanyalah fitur f01–f13, seluruh baseline B0/B1, serta *m*rev dan *m*cont.
 
 Angka berikut berasal dari `references/gradient_boosting_lama/` (22 Nov 2026, data sebelum adendum
 ATR; LightGBM 4.7.0, NumPy 2.2.6, Python 3.10).
@@ -352,11 +413,6 @@ ada di desimal ke-10 (≤ 10⁻⁹). `features_calib.csv`, kedua berkas OOF, ber
 
 ## 10. Yang belum di repo
 
-- Run ulang tahap fitur → pembanding → *walk-forward* → model akhir dengan fitur Adendum 4. Sampai
-  itu dilakukan, tes "data asli" (`tests/test_gb_model_akhir.py`, `tests/test_gb_gambar.py`)
-  dilewati karena `features_dev.csv` di `runs/tesis` masih memakai daftar fitur lama.
-- Sesudah run ulang: perbarui angka acuan tes data asli yang bergantung pada fitur (konfigurasi
-  terpilih, τ, log loss, isi daun) dan Bagian 9 dari hasil baru.
 - Kunci-2: manifest semua ketetapan (model, τ, δ, pembanding, templat SHAP) + *commit hash*.
 - Eksekusi tunggal pada data uji dan evaluasi RO1/RO2 + SHAP.
 
