@@ -707,12 +707,15 @@ def run_asli_sesuai_acuan():
                      "butuh lightgbm dan runs/tesis (sesuai references/tesis.json, fitur sesuai "
                      "kode sekarang) sampai tahap walk-forward")
 class TestDataAsli(unittest.TestCase):
-    """Model akhir dari data asli (salinan di folder sementara) dibandingkan dengan hasil lama.
+    """Model akhir dari data asli (salinan di folder sementara) dibandingkan dengan angka acuan.
 
-    Catatan Adendum 4: angka acuan di kelas ini (konfigurasi terpilih, τ, log loss) berasal dari
-    run 24 November 2026 dengan fitur 14-15 lama. Setelah tahap fitur sampai model akhir dijalankan
-    ulang dengan fitur Adendum 4, angka yang bergantung pada fitur perlu diperbarui dari hasil baru;
-    m_rev, m_cont, dan jumlah event tidak bergantung pada fitur."""
+    Angka yang bergantung pada fitur (konfigurasi terpilih, τ, log loss) berasal dari run ulang
+    27 November 2026 dengan fitur Kunci-1 Adendum 4 (`ACUAN_ADENDUM_4`). m_rev, m_cont, dan jumlah
+    event tidak bergantung pada fitur, jadi tetap dibandingkan dengan hasil lama 22 November 2026."""
+
+    ACUAN_ADENDUM_4 = {("kalibrasi", "tau"): 1.0100233505643348,
+                       ("kalibrasi", "sesudah", "log_loss"): 0.9350936918240434,
+                       ("dev_dalam_sampel", "log_loss"): 0.8656652260162644}
 
     @classmethod
     def setUpClass(cls):
@@ -735,11 +738,16 @@ class TestDataAsli(unittest.TestCase):
         self.assertEqual((r["n_latih"], r["n_purged"], r["n_calib"]), (1841, 0, 227))
         self.assertEqual(r["jumlah_pohon"], 300)
 
-    def test_angka_utama_sama_dengan_hasil_lama(self):
+    def test_angka_utama_sama_dengan_acuan_adendum_4(self):
+        for jalan, b in self.ACUAN_ADENDUM_4.items():
+            a = self.recon
+            for k in jalan:
+                a = a[k]
+            self.assertAlmostEqual(a, b, delta=1e-9 * max(1.0, abs(b)), msg=".".join(jalan))
+
+    def test_angka_tanpa_fitur_sama_dengan_hasil_lama(self):
         r, lama = self.recon, self.lama
-        for jalan in (("kalibrasi", "tau"), ("kalibrasi", "sesudah", "log_loss"),
-                      ("aturan_keputusan", "m_rev"), ("aturan_keputusan", "m_cont"),
-                      ("dev_dalam_sampel", "log_loss")):
+        for jalan in (("aturan_keputusan", "m_rev"), ("aturan_keputusan", "m_cont")):
             a, b = r, lama
             for k in jalan:
                 a, b = a[k], b[k]
