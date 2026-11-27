@@ -1,0 +1,43 @@
+{
+  "adendum": 4,
+  "tanggal_kunci": "2026-11-25",
+  "dokumen": "ADENDUM_4.md",
+  "status_data_uji": "belum dibuka",
+  "status_implementasi": "belum dijalankan; fitur 14-15 baru belum pernah dihitung",
+  "berlaku_atas": ["kunci_1_fitur.json: fitur_tambahan dan sumber"],
+  "opsi": "B: wick tetap + CMF-21 + permutation entropy 48",
+  "sumber": "Literatur peer-reviewed 2021-2026 (ADENDUM_4.md bagian 2 dan 4); kuesioner hanya menjadi sumber aturan B1/S1",
+  "kriteria_fitur_tambahan": [
+    "dipakai di >= 2 studi peer-reviewed 2021-2026, atau ada mekanisme teoretis yang jelas terhadap reversal/continuation di level",
+    "dapat dihitung dari OHLC atau tick volume H1 hanya dengan bar sampai t* (k = 0)",
+    "tidak tumpang tindih dengan 12 fitur dasar",
+    "ditetapkan sebelum nilainya dihitung pada data"
+  ],
+  "fitur_tambahan": [
+    {"no": 13, "nama": "f13_wick_penolakan", "status": "tetap",
+     "definisi": "wick searah reversal / (high - low) candle sentuhan; PDH: high - max(open, close), PDL: min(open, close) - low; 0 bila high = low",
+     "rujukan": ["Nison (1991)", "Morris (2006)", "Li dkk. (2024)", "Moser & Brauneis (2026)", "Layegh dkk. (2026)", "Vahidpour dkk. (2024)"]},
+    {"no": 14, "nama": "f14_cmf21_d", "status": "baru", "menggantikan": "f14_engulfing_d",
+     "definisi": "d * sum(MFM_i * V_i) / sum(V_i) atas 21 bar H1 terakhir yang tersedia sampai t* (termasuk t*); MFM_i = ((C_i - L_i) - (H_i - C_i)) / (H_i - L_i), 0 bila H_i = L_i; V = tick volume; 0 bila sum(V) = 0",
+     "jendela_bar": 21, "rentang": [-1, 1], "bertanda_d": true,
+     "rujukan": ["Grądzki dkk. (2025)", "Nokar dkk. (2026)", "Easley, López de Prado & O'Hara (2012)", "Osler (2003, 2005)"]},
+    {"no": 15, "nama": "f15_pe48", "status": "baru", "menggantikan": "f15_volume_relatif",
+     "definisi": "permutation entropy ternormalisasi atas 48 log return terakhir sampai t* (r_i = ln(C_i / C_{i-1}), 49 close); orde m = 3, tunda tau = 1 (46 pola ordinal); PE = -sum(p * ln p) / ln(3!); nilai sama diurutkan menurut urutan kemunculan",
+     "jendela_return": 48, "orde_m": 3, "tunda": 1, "rentang": [0, 1], "bertanda_d": false,
+     "alasan_jendela": "46 pola >= 5 * 3! = 30 (Cuesta-Frau dkk., 2019); kelipatan siklus harian terpendek yang memenuhi; 24 return hanya 22 pola",
+     "rujukan": ["Bandt & Pompe (2002)", "Nokar dkk. (2026)", "Mensi dkk. (2022)", "Fernandes dkk. (2025)", "Cuesta-Frau dkk. (2019)"]}
+  ],
+  "tidak_dipakai": {
+    "f14_engulfing_d": "sumber kuesioner (K3, n = 3); diganti f14_cmf21_d",
+    "f15_volume_relatif": "sumber kuesioner (K7, n = 3); diganti f15_pe48",
+    "rentang_candle_sentuhan": "Opsi A; dukungan literatur paling lemah dan perbandingan dengan B1 tidak bersarang",
+    "angka_bulat_dan_pivot": "tidak memenuhi kriteria saat ini"
+  },
+  "B1": {
+    "sumber": "K2 kuesioner (tidak berubah)",
+    "aturan": "f13_wick_penolakan >= theta",
+    "theta": 0.6666666667,
+    "probabilitas": "frekuensi kelas pada data pengembangan, dipisah menurut aturan terpenuhi atau tidak"
+  },
+  "jumlah_fitur_akhir": 15
+}
