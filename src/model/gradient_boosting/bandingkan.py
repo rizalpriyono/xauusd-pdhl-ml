@@ -12,6 +12,11 @@ status:
 
 Kunci jejak audit (hash sumber, lingkungan, versi, commit) memang pasti berbeda, jadi diabaikan.
 Modul ini hanya menulis laporan; ia tidak menghentikan proses.
+
+Sesudah Kunci-1 Adendum 4 (25 November 2026) fitur 14-15 diganti, sedangkan acuan lama dihitung
+dengan fitur 14-15 lama. Karena itu yang masih diharapkan IDENTIK atau BEDA_KECIL hanyalah fitur
+f01-f13 dan seluruh baseline B0/B1. Angka f14/f15 lama muncul sebagai HANYA_LAMA dan yang baru
+sebagai HANYA_BARU, sedangkan walk-forward dan model akhir memang berbeda (BEDA).
 """
 import json
 import math
@@ -21,7 +26,7 @@ from pathlib import Path
 from pdhl_data import common
 
 BERKAS = ("fitur_rekonsiliasi.json", "pembanding_rekonsiliasi.json",
-          "walk_forward_rekonsiliasi.json")
+          "walk_forward_rekonsiliasi.json", "model_akhir_rekonsiliasi.json")
 ASAL = "asal.json"
 DIABAIKAN = frozenset({"sumber_sha256", "sumber_pipeline_sha256", "lingkungan",
                        "versi_pdhl_data", "commit"})
@@ -98,6 +103,9 @@ def laporan(hasil, asal):
              f"Status: IDENTIK = sama persis; BEDA_KECIL = |selisih| ≤ {TOL:g} × max(1, |nilai|), "
              "efek yang diharapkan dari adendum ATR; BEDA = perlu ditinjau. Hash sumber, "
              "lingkungan, versi, dan commit diabaikan.", "",
+             "Catatan Adendum 4: acuan lama dihitung dengan fitur 14-15 lama. Yang masih diharapkan "
+             "IDENTIK atau BEDA_KECIL hanyalah fitur f01-f13 dan seluruh baseline B0/B1. Angka "
+             "f14/f15, walk-forward, dan model akhir memang berbeda dari acuan lama.", "",
              "## Ringkasan", "",
              "| Berkas | " + " | ".join(STATUS) + " |", "|---|" + "---|" * len(STATUS)]
     for nama, rows in hasil.items():
@@ -120,7 +128,7 @@ def laporan(hasil, asal):
 
 
 def cek_acuan(acuan_dir, asal):
-    """SHA-256 ketiga berkas acuan lama harus sama dengan `asal.json`."""
+    """SHA-256 setiap berkas acuan lama harus sama dengan `asal.json`."""
     sha = asal.get("sha256", {})
     beda = [n for n in BERKAS
             if not (acuan_dir / n).exists() or common.sha256_file(acuan_dir / n) != sha.get(n)]

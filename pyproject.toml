@@ -16,6 +16,8 @@ dependencies = []          # hanya stdlib; di Windows tambahkan paket `tzdata` u
 model = ["lightgbm==4.7.0", "numpy==2.2.6", "scipy==1.15.3"]
 # Tahap walk-forward LSTM (PyTorch); tahap fitur dan baseline tetap hanya stdlib.
 lstm = ["numpy>=1.26", "scipy>=1.11", "torch>=2.2"]
+# Tahap `gambar` (visualisasi dokumentasi). Dipasang bersama `model`: pip install -e '.[model,viz]'.
+viz = ["matplotlib==3.10.9"]
 
 [project.scripts]
 pdhl-data = "pdhl_data.__main__:main"

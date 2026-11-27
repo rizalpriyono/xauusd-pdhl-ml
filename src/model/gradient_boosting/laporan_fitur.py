@@ -73,7 +73,7 @@ def section_numeric(rows_by_split):
 
 def section_categorical(rows_by_split):
     out = ["## 2. Fitur kategorik dan diskret", ""]
-    for c in (*CATEGORICAL, "f14_engulfing_d", "b1_terpenuhi"):
+    for c in (*CATEGORICAL, "b1_terpenuhi"):
         cats = sorted({r[c] for rows in rows_by_split.values() for r in rows})
         out += [f"**{c}**", "", "| Nilai | " + " | ".join(rows_by_split) + " |",
                 "|---|" + "---|" * len(rows_by_split)]
@@ -118,8 +118,8 @@ def section_pit(recon):
            f"- Guard `PointInTime`: {recon['guard_point_in_time_event']} event dihitung tanpa "
            "`LookAheadError` (semua akses bar dan EMA dibatasi sampai bar keputusan).",
            "- Uji pemotongan: bar dipotong tepat pada bar keputusan sebuah event, lalu fitur "
-           "dihitung ulang (termasuk EMA dan konteks volume) dan dibandingkan persis dengan "
-           "perhitungan pada data penuh.", "",
+           "dihitung ulang (termasuk EMA, CMF-21, dan permutation entropy) dan dibandingkan persis "
+           "dengan perhitungan pada data penuh.", "",
            "| Titik potong (NY) | bar_idx | event diperiksa | mismatch |", "|---|---|---|---|"]
     for r in recon["uji_pemotongan"]:
         out.append(f"| {r['cut_ts_ny']} | {r['cut_bar_idx']} | {r['n_event']} | {r['mismatch']} |")

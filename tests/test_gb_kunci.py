@@ -40,11 +40,90 @@ class TestKunciRepo(unittest.TestCase):
         self.assertAlmostEqual(k.theta, 2 / 3, places=9)
         self.assertEqual((k.laplace, k.clip, k.toleransi_seri), (1, 1e-15, 1e-6))
         self.assertEqual(k.k, 0)
+        self.assertEqual((k.a, k.b, k.ece_bin, k.delta), (2.0, 1.0, 10, 0.1))
+        self.assertEqual(k.delta_grid, (0.0, 0.1, 0.2, 0.3))
+        self.assertEqual(k.teknis["temperature_rentang"], [0.05, 20.0])
         self.assertEqual(k.teknis["seed_model"], 20261119)
         self.assertEqual(k.teknis["lightgbm"]["max_depth"], [2, 3])
 
     def test_kunci_dir_bawaan_di_samping_config(self):
         self.assertEqual(kunci.kunci_dir_bawaan(ROOT / "configs" / "tesis.json"), KUNCI_DIR)
+
+    def test_manifest_adendum_mencakup_seluruh_berkas(self):
+        sha = kunci.cek_manifest_adendum(KUNCI_DIR)
+        self.assertEqual(set(sha), {"kunci_1.json", "kunci_1_fitur.json", "kunci_1_rq2.json",
+                                    "KUNCI-1_parameter_label.md", "RENCANA_ANALISIS_RQ2.md",
+                                    "ADENDUM_3.md", "kunci_1_adendum_3.json",
+                                    "ADENDUM_4.md", "kunci_1_adendum_4.json"})
+
+    def test_muat_kunci_fitur_tambahan_adendum_4(self):
+        k = kunci.muat_kunci(CFG, KUNCI_DIR)
+        f13, f14, f15 = k.fitur_tambahan
+        self.assertEqual([f["nama"] for f in k.fitur_tambahan],
+                         ["f13_wick_penolakan", "f14_cmf21_d", "f15_pe48"])
+        self.assertEqual((f14["jendela_bar"], f14["bertanda_d"]), (21, True))
+        self.assertEqual((f15["jendela_return"], f15["orde_m"], f15["tunda"], f15["bertanda_d"]),
+                         (48, 3, 1, False))
+        self.assertEqual(len(k.manifest_sha256), 9)
+        self.assertEqual(k.manifest_sha256[kunci.ADENDUM_FITUR_JSON],
+                         common.sha256_file(KUNCI_DIR / kunci.ADENDUM_FITUR_JSON))
+        self.assertAlmostEqual(k.theta, 2 / 3, places=9)              # B1 tidak diubah Adendum 4
+
+
+class TestAdendumRusak(unittest.TestCase):
+    """Adendum 4 (fitur 14-15) hanya dipakai bila rantai manifestnya utuh."""
+
+    def _ditolak(self, rusak, fungsi=None):
+        with tempfile.TemporaryDirectory() as tmp:
+            d = salin_kunci(tmp)
+            rusak(d)
+            with self.assertRaises(kunci.KunciError):
+                (fungsi or (lambda p: kunci.muat_kunci(CFG, p)))(d)
+
+    def test_adendum_diubah_ditolak(self):
+        self._ditolak(lambda d: ubah_json(d / kunci.ADENDUM_FITUR_JSON,
+                                          lambda r: r["fitur_tambahan"][1].update(jendela_bar=14)))
+
+    def test_manifest_adendum_hilang_ditolak(self):
+        self._ditolak(lambda d: (d / kunci.MANIFEST_ADENDUM).unlink())
+
+    def test_manifest_sebelumnya_berubah_ditolak(self):
+        def rusak(d):
+            p = d / "MANIFEST_KUNCI_1_ADENDUM_3.json"
+            p.write_text(p.read_text() + "\n")
+        self._ditolak(rusak, kunci.cek_manifest_adendum)
+
+    def test_manifest_adendum_tanpa_berkas_fitur_ditolak(self):
+        self._ditolak(lambda d: ubah_json(d / kunci.MANIFEST_ADENDUM,
+                                          lambda r: r["sha256"].pop(kunci.ADENDUM_FITUR_JSON)),
+                      kunci.cek_manifest_adendum)
+
+    def test_manifest_adendum_tanpa_rantai_ke_manifest_dasar_ditolak(self):
+        self._ditolak(lambda d: ubah_json(d / kunci.MANIFEST_ADENDUM,
+                                          lambda r: r["manifest_sebelumnya"].pop(kunci.MANIFEST)),
+                      kunci.cek_manifest_adendum)
+
+    def test_isi_adendum_tidak_valid_ditolak(self):
+        rusak = {
+            "nomor_adendum": lambda r: r.update(adendum=5),
+            "nomor_fitur": lambda r: r["fitur_tambahan"][0].update(no=12),
+            "nama_kosong": lambda r: r["fitur_tambahan"][2].update(nama=""),
+            "jumlah_fitur": lambda r: r.update(jumlah_fitur_akhir=14),
+            "kurang_satu": lambda r: r["fitur_tambahan"].pop(),
+            "bukan_daftar": lambda r: r.update(fitur_tambahan=None),
+            "theta_beda": lambda r: r["B1"].update(theta=0.5),
+        }
+        for nama, mutate in rusak.items():
+            with self.subTest(nama), tempfile.TemporaryDirectory() as tmp:
+                p = Path(tmp) / "adendum.json"
+                p.write_text((KUNCI_DIR / kunci.ADENDUM_FITUR_JSON).read_text())
+                ubah_json(p, mutate)
+                with self.assertRaises(kunci.KunciError):
+                    kunci.load_adendum_fitur(p, 0.6666666667)
+
+    def test_isi_adendum_repo_valid(self):
+        raw = kunci.load_adendum_fitur(KUNCI_DIR / kunci.ADENDUM_FITUR_JSON, 0.6666666667)
+        self.assertEqual(raw["jumlah_fitur_akhir"], 15)
 
 
 class TestKunciRusak(unittest.TestCase):
@@ -98,6 +177,14 @@ class TestKunciRusak(unittest.TestCase):
             "laplace_salah": lambda r: r["rq2_1"].update(B1_laplace_bila_sel_kosong=-1),
             "toleransi_salah": lambda r: r["teknis"].update(toleransi_seri_logloss=-1),
             "delta_bukan_grid": lambda r: r["pendukung"].update(delta_utama=0.15),
+            "ece_bin_nol": lambda r: r["rq2_1"].update(ece_bin=0),
+            "ece_bin_pecahan": lambda r: r["rq2_1"].update(ece_bin=10.5),
+            "delta_grid_bukan_angka": lambda r: r["pendukung"].update(delta_grid=[0.1, "x"]),
+            "delta_grid_null": lambda r: r["pendukung"].update(delta_grid=None),
+            "rentang_tau_bool": lambda r: r["teknis"].update(temperature_rentang=[True, 20.0]),
+            "rentang_tau_terbalik": lambda r: r["teknis"].update(temperature_rentang=[20.0, 0.05]),
+            "rentang_tau_nol": lambda r: r["teknis"].update(temperature_rentang=[0.0, 20.0]),
+            "rentang_tau_hilang": lambda r: r["teknis"].pop("temperature_rentang"),
         }
         for name, mutate in rusak.items():
             with self.subTest(name), tempfile.TemporaryDirectory() as tmp:

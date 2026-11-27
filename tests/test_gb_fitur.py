@@ -1,7 +1,11 @@
-"""Tes tahap 1 rekayasa fitur (Proposal v2 IV.II.5, Tabel 4.5, dan adendum Kunci-1 17 Nov 2026).
+"""Tes tahap 1 rekayasa fitur (Proposal v2 IV.II.5, Tabel 4.5, dan Kunci-1 Adendum 1 dan 4).
 
-Port dari `Pemodelan PDH-PDL/tests/test_fitur.py`, ditambah tes guard ATR (adendum 2026-11-24).
+Port dari `Pemodelan PDH-PDL/tests/test_fitur.py`, ditambah tes guard ATR (adendum 2026-11-24) dan
+tes fitur 14-15 Adendum 4 (25 November 2026): CMF-21 bertanda d dan permutation entropy 48 return.
 """
+import dataclasses
+import math
+import random
 import sys
 import tempfile
 import unittest
@@ -13,12 +17,15 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from gb_sintetis import make_bars, make_event, make_run, mirror_bars, mirror_event  # noqa: E402
 from model.gradient_boosting import jalur, kunci  # noqa: E402
-from model.gradient_boosting.fitur import (FEATURE_COLS, AtrKosong, LookAheadError,  # noqa: E402
-                                           PointInTime, b1_terpenuhi, build_context,
-                                           cek_tanpa_kosong, compute_ema, engulfing_d, hari,
-                                           hitung_fitur, hitung_semua, pilih_titik_potong,
-                                           prepare_bars, reconciliation, run_fitur, sesi,
-                                           uji_pemotongan, volume_relatif, wick_penolakan)
+from model.gradient_boosting.fitur import (CMF_N, FEATURE_COLS, PE_M, PE_N, PE_TUNDA,  # noqa: E402
+                                           AtrKosong, LookAheadError, PointInTime, b1_terpenuhi,
+                                           build_context, cek_kunci_fitur, cek_tanpa_kosong,
+                                           chaikin_money_flow, cmf_d, compute_ema, hari,
+                                           hitung_fitur, hitung_semua, money_flow_multiplier,
+                                           pe_log_return, permutation_entropy,
+                                           pilih_titik_potong, pola_ordinal, prepare_bars,
+                                           reconciliation, run_fitur, sesi, uji_pemotongan,
+                                           wick_penolakan)
 from pdhl_data import common  # noqa: E402
 from pdhl_data.config import load_config  # noqa: E402
 
@@ -44,20 +51,6 @@ class TestHelpers(unittest.TestCase):
         self.assertAlmostEqual(wick_penolakan(100.0, 101.0, 99.9, 100.2, +1), 0.8 / 1.1)
         self.assertAlmostEqual(wick_penolakan(100.0, 101.0, 99.0, 100.5, -1), 1.0 / 2.0)
         self.assertEqual(wick_penolakan(100.0, 100.0, 100.0, 100.0, +1), 0.0)
-
-    def test_engulfing_bertanda_d(self):
-        prev_bear, prev_bull = (100.5, 100.0), (100.0, 100.5)
-        bull_engulf, bear_engulf = (99.9, 100.6), (100.6, 99.9)
-        self.assertEqual(engulfing_d(*prev_bear, *bull_engulf, +1), +1)   # bullish di PDH
-        self.assertEqual(engulfing_d(*prev_bull, *bear_engulf, +1), -1)   # bearish di PDH
-        self.assertEqual(engulfing_d(*prev_bull, *bear_engulf, -1), +1)   # bearish di PDL
-        self.assertEqual(engulfing_d(*prev_bear, *bull_engulf, -1), -1)   # bullish di PDL
-
-    def test_engulfing_tidak_terpenuhi(self):
-        self.assertEqual(engulfing_d(100.0, 100.5, 99.9, 100.6, +1), 0)   # warna sama
-        self.assertEqual(engulfing_d(100.5, 100.0, 100.1, 100.4, +1), 0)  # badan tidak menutupi
-        self.assertEqual(engulfing_d(100.2, 100.2, 99.9, 100.6, +1), 0)   # sebelumnya doji
-        self.assertEqual(engulfing_d(100.5, 100.0, 100.0, 100.5, +1), +1)  # batas sama dihitung
 
     def test_ema_seed_dan_rekursi(self):
         ema = compute_ema([1.0, 2.0, 3.0, 4.0, 5.0], n=3)
@@ -87,40 +80,172 @@ class TestPointInTime(unittest.TestCase):
             view[0:2]
 
 
-class TestVolumeRelatif(unittest.TestCase):
+def _mfm(b):
+    """Money flow multiplier satu bar, ditulis ulang di tes agar tidak bergantung pada kode."""
+    return ((b["close"] - b["low"]) - (b["high"] - b["close"])) / (b["high"] - b["low"])
+
+
+def _ubah_bar(bars, i, **ubah):
+    return [{**b, **ubah} if j == i else b for j, b in enumerate(bars)]
+
+
+class _Rekam:
+    """Tampilan bar yang mencatat setiap indeks yang dibaca."""
+
+    def __init__(self, bars):
+        self.bars, self.dibaca = bars, []
+
+    def __getitem__(self, i):
+        self.dibaca.append(i)
+        return self.bars[i]
+
+
+class TestChaikinMoneyFlow(unittest.TestCase):
+    """Fitur 14 (Adendum 4): d x CMF atas 21 bar terakhir sampai bar keputusan."""
+
     def setUp(self):
-        self.bars = make_bars(25)
-        self.ctx = build_context(self.bars)
+        self.bars = make_bars(4)               # 92 bar
+        self.t = 60
 
-    def test_rasio_jam_sama_20_sesi(self):
-        t = 23 * 22 + 10                       # sesi ke-23, jam HOURS[10]
-        view = PointInTime(self.bars, limit=t)
-        h = self.bars[t]["ny_hour"]
-        hist = [b["tick_volume"] for b in self.bars[23 * 2: 23 * 22] if b["ny_hour"] == h]
-        self.assertEqual(len(hist), 20)
-        expect = self.bars[t]["tick_volume"] / (sum(hist) / 20)
-        self.assertAlmostEqual(volume_relatif(view, self.ctx, t), expect)
+    def test_mfm_posisi_close_dalam_rentang(self):
+        self.assertEqual(money_flow_multiplier(10.0, 0.0, 10.0), 1.0)    # close di high
+        self.assertEqual(money_flow_multiplier(10.0, 0.0, 0.0), -1.0)    # close di low
+        self.assertEqual(money_flow_multiplier(10.0, 0.0, 5.0), 0.0)     # close di tengah
+        self.assertAlmostEqual(money_flow_multiplier(4.0, 2.0, 3.5), 0.5)
+        self.assertEqual(money_flow_multiplier(7.0, 7.0, 7.0), 0.0)      # H = L
+        with self.assertRaises(ValueError):
+            money_flow_multiplier(10.0, 0.0, 11.0)                       # close di luar rentang
 
-    def test_sesi_tanpa_jam_itu_dilewati(self):
-        t = 23 * 22 + 10
-        h = self.bars[t]["ny_hour"]
-        bars = [b for b in self.bars if not (b["ny_hour"] == h and b["session_date"] in
-                                              {self.bars[23 * k]["session_date"] for k in (5, 6)})]
-        bars = [{**b, "bar_idx": i} for i, b in enumerate(bars)]
-        t2 = t - 2
-        self.assertEqual(bars[t2]["ny_hour"], h)
-        window = set(sorted({b["session_date"] for b in self.bars})[2:22])   # 20 sesi sebelumnya
-        hist = [b["tick_volume"] for b in bars[:t2]
-                if b["ny_hour"] == h and b["session_date"] in window]
-        self.assertEqual(len(hist), 18)       # 2 dari 20 sesi tidak punya bar jam h
-        val = volume_relatif(PointInTime(bars, limit=t2), build_context(bars), t2)
-        self.assertAlmostEqual(val, bars[t2]["tick_volume"] / (sum(hist) / len(hist)))
+    def test_cmf_hitung_tangan(self):
+        self.assertAlmostEqual(
+            chaikin_money_flow([(10.0, 0.0, 10.0, 100.0), (10.0, 0.0, 0.0, 300.0)]), -0.5)
+        self.assertAlmostEqual(
+            chaikin_money_flow([(4.0, 2.0, 3.5, 50.0), (7.0, 7.0, 7.0, 150.0)]), 0.125)
 
-    def test_riwayat_kurang_dari_10_kosong(self):
-        t = 23 * 9 + 5
-        self.assertIsNone(volume_relatif(PointInTime(self.bars, limit=t), self.ctx, t))
-        t = 23 * 10 + 5
-        self.assertIsNotNone(volume_relatif(PointInTime(self.bars, limit=t), self.ctx, t))
+    def test_cmf_volume_nol_negatif_dan_kosong(self):
+        self.assertEqual(chaikin_money_flow([(10.0, 0.0, 10.0, 0.0), (10.0, 0.0, 0.0, 0.0)]), 0.0)
+        with self.assertRaises(ValueError):
+            chaikin_money_flow([(10.0, 0.0, 10.0, -1.0)])
+        with self.assertRaises(ValueError):
+            chaikin_money_flow([])
+
+    def test_jendela_21_bar_termasuk_bar_keputusan(self):
+        b, t = self.bars, self.t
+        jendela = b[t - 20: t + 1]
+        expect = (sum(_mfm(x) * x["tick_volume"] for x in jendela)
+                  / sum(x["tick_volume"] for x in jendela))
+        view = PointInTime(b, limit=t)
+        self.assertEqual((CMF_N, len(jendela)), (21, 21))
+        self.assertAlmostEqual(cmf_d(view, t, +1), expect)
+        self.assertAlmostEqual(cmf_d(view, t, -1), -expect)             # bertanda d
+        self.assertTrue(-1.0 <= cmf_d(view, t, +1) <= 1.0)
+
+    def test_bar_di_luar_jendela_tidak_berpengaruh(self):
+        t = self.t
+        asal = cmf_d(PointInTime(self.bars, limit=t), t, +1)
+
+        def ubah(i):
+            return _ubah_bar(self.bars, i, close=self.bars[i]["high"], tick_volume=1e6)
+        self.assertEqual(cmf_d(PointInTime(ubah(t - 21), limit=t), t, +1), asal)
+        self.assertNotEqual(cmf_d(PointInTime(ubah(t - 20), limit=t), t, +1), asal)
+
+    def test_hanya_membaca_21_bar_terakhir(self):
+        view = _Rekam(self.bars)
+        cmf_d(view, self.t, +1)
+        self.assertEqual(sorted(view.dibaca), list(range(self.t - 20, self.t + 1)))
+
+    def test_riwayat_kurang_dari_21_bar_kosong(self):
+        self.assertIsNone(cmf_d(PointInTime(self.bars, limit=19), 19, +1))
+        self.assertIsNotNone(cmf_d(PointInTime(self.bars, limit=20), 20, +1))
+
+    def test_bar_sesudah_batas_tidak_bisa_dibaca(self):
+        with self.assertRaises(LookAheadError):
+            cmf_d(PointInTime(self.bars, limit=self.t - 1), self.t, +1)
+
+
+class TestPermutationEntropy(unittest.TestCase):
+    """Fitur 15 (Adendum 4): permutation entropy ternormalisasi, orde 3, atas 48 log return."""
+
+    def setUp(self):
+        self.bars = make_bars(4)
+        self.t = 70
+
+    def test_pola_ordinal_dan_nilai_seri(self):
+        self.assertEqual(pola_ordinal((1.0, 2.0, 3.0)), (0, 1, 2))
+        self.assertEqual(pola_ordinal((3.0, 1.0, 2.0)), (1, 2, 0))
+        self.assertEqual(pola_ordinal((1.0, 1.0, 2.0)), (0, 1, 2))     # seri: urutan kemunculan
+        self.assertEqual(pola_ordinal((2.0, 1.0, 1.0)), (1, 2, 0))
+        self.assertEqual(pola_ordinal((5.0, 5.0, 5.0)), (0, 1, 2))
+
+    def test_deret_teratur_bernilai_nol(self):
+        for xs in ([float(i) for i in range(48)], [float(-i) for i in range(48)], [7.0] * 48):
+            pe = permutation_entropy(xs)
+            self.assertEqual(pe, 0.0)
+            self.assertEqual(math.copysign(1.0, pe), 1.0)              # bukan -0.0
+
+    def test_hitung_tangan(self):
+        # jendela (1,2,3) -> (0,1,2); (2,3,2) -> (0,2,1); (3,2,1) -> (2,1,0): tiga pola, p = 1/3
+        self.assertAlmostEqual(permutation_entropy([1.0, 2.0, 3.0, 2.0, 1.0]),
+                               math.log(3) / math.log(6))
+        # jendela (1,3,2) -> (0,2,1); (3,2,4) -> (1,0,2); (2,4,3) -> (0,2,1): p = 2/3 dan 1/3
+        h = -(2 / 3) * math.log(2 / 3) - (1 / 3) * math.log(1 / 3)
+        self.assertAlmostEqual(permutation_entropy([1.0, 3.0, 2.0, 4.0, 3.0]), h / math.log(6))
+
+    def test_hitung_tangan_dengan_nilai_seri(self):
+        # seri menurut kemunculan: (1,1,2) -> (0,1,2); (1,2,2) -> (0,1,2); (2,2,1) -> (2,0,1),
+        # jadi p = 2/3 dan 1/3. Aturan seri lain (mis. kemunculan terbalik) memberi tiga pola.
+        h = -(2 / 3) * math.log(2 / 3) - (1 / 3) * math.log(1 / 3)
+        self.assertAlmostEqual(permutation_entropy([1.0, 1.0, 2.0, 2.0, 1.0]), h / math.log(6))
+
+    def test_enam_pola_merata_bernilai_satu(self):
+        xs = [0.0, 1.0, 5.0, 4.0, 3.0, 7.0, 2.0, 6.0]                  # 6 jendela, 6 pola berbeda
+        self.assertEqual(len({pola_ordinal(xs[i:i + 3]) for i in range(6)}), 6)
+        self.assertAlmostEqual(permutation_entropy(xs), 1.0)
+
+    def test_negasi_tidak_mengubah_nilai(self):
+        rnd = random.Random(3)
+        xs = [rnd.uniform(-1, 1) for _ in range(48)]
+        pe = permutation_entropy(xs)
+        self.assertAlmostEqual(pe, permutation_entropy([-x for x in xs]), places=12)
+        self.assertTrue(0.0 < pe <= 1.0)
+
+    def test_deret_terlalu_pendek_ditolak(self):
+        with self.assertRaises(ValueError):
+            permutation_entropy([1.0, 2.0])
+
+    def test_48_log_return_dari_49_close(self):
+        b, t = self.bars, self.t
+        ret = [math.log(b[i]["close"] / b[i - 1]["close"]) for i in range(t - 47, t + 1)]
+        self.assertEqual((PE_N, PE_M, PE_TUNDA, len(ret)), (48, 3, 1, 48))
+        self.assertEqual(PE_N - (PE_M - 1) * PE_TUNDA, 46)              # jumlah pola ordinal
+        pe = pe_log_return(PointInTime(b, limit=t), t)
+        self.assertAlmostEqual(pe, permutation_entropy(ret), places=12)
+        self.assertTrue(0.0 <= pe <= 1.0)
+
+    def test_close_di_luar_49_bar_tidak_berpengaruh(self):
+        t = self.t
+        asal = pe_log_return(PointInTime(self.bars, limit=t), t)
+        rusak = _ubah_bar(self.bars, t - 49, close=self.bars[t - 49]["close"] * 3)
+        self.assertEqual(pe_log_return(PointInTime(rusak, limit=t), t), asal)
+
+    def test_hanya_membaca_49_close_terakhir(self):
+        view = _Rekam(self.bars)
+        pe_log_return(view, self.t)
+        self.assertEqual(sorted(view.dibaca), list(range(self.t - 48, self.t + 1)))
+
+    def test_riwayat_kurang_dari_49_close_kosong(self):
+        self.assertIsNone(pe_log_return(PointInTime(self.bars, limit=47), 47))
+        self.assertIsNotNone(pe_log_return(PointInTime(self.bars, limit=48), 48))
+
+    def test_close_tidak_positif_ditolak(self):
+        t = self.t
+        rusak = _ubah_bar(self.bars, t - 5, close=0.0)
+        with self.assertRaises(ValueError):
+            pe_log_return(PointInTime(rusak, limit=t), t)
+
+    def test_bar_sesudah_batas_tidak_bisa_dibaca(self):
+        with self.assertRaises(LookAheadError):
+            pe_log_return(PointInTime(self.bars, limit=self.t - 1), self.t)
 
 
 class TestHitungFitur(unittest.TestCase):
@@ -153,26 +278,48 @@ class TestHitungFitur(unittest.TestCase):
         self.assertAlmostEqual(f["f13_wick_penolakan"],
                                wick_penolakan(b[t]["open"], b[t]["high"], b[t]["low"],
                                               b[t]["close"], 1))
-        self.assertEqual(f["f14_engulfing_d"],
-                         engulfing_d(b[t - 1]["open"], b[t - 1]["close"], b[t]["open"],
-                                     b[t]["close"], 1))
-        self.assertAlmostEqual(f["f15_volume_relatif"], volume_relatif(
-            PointInTime(b, limit=t), self.ctx, t))
+        jendela = b[t - 20: t + 1]
+        self.assertAlmostEqual(f["f14_cmf21_d"],
+                               d * sum(_mfm(x) * x["tick_volume"] for x in jendela)
+                               / sum(x["tick_volume"] for x in jendela))
+        ret = [math.log(b[i]["close"] / b[i - 1]["close"]) for i in range(t - 47, t + 1)]
+        self.assertAlmostEqual(f["f15_pe48"], permutation_entropy(ret))
         self.assertEqual(f["b1_terpenuhi"], b1_terpenuhi(f["f13_wick_penolakan"], THETA))
         self.assertEqual(set(FEATURE_COLS) - set(f), set())
+        self.assertFalse({"f14_engulfing_d", "f15_volume_relatif"} & set(f))
+
+    def test_keputusan_sesudah_sentuhan_memakai_bar_keputusan(self):
+        """k > 0: f14 dan f15 dihitung sampai bar keputusan t*, bukan bar sentuhan t."""
+        b, t = self.bars, self.t
+        dec = t + 3
+        ev = {**self.ev, "decision_bar_idx": str(dec), "decision_ts_ny": b[dec]["ts_ny"],
+              "entry_price": repr(b[dec]["close"]), "atr14_h1": repr(b[dec]["atr14_h1"])}
+        f = hitung_fitur(ev, b, self.ctx, THETA)
+        jendela = b[dec - 20: dec + 1]
+        self.assertAlmostEqual(f["f14_cmf21_d"],
+                               sum(_mfm(x) * x["tick_volume"] for x in jendela)
+                               / sum(x["tick_volume"] for x in jendela))
+        ret = [math.log(b[i]["close"] / b[i - 1]["close"]) for i in range(dec - 47, dec + 1)]
+        self.assertAlmostEqual(f["f15_pe48"], permutation_entropy(ret))
+        di_sentuhan = hitung_fitur(self.ev, b, self.ctx, THETA)
+        self.assertNotEqual(f["f14_cmf21_d"], di_sentuhan["f14_cmf21_d"])
 
     def test_cermin_pdh_pdl_sama(self):
         f_pdh = hitung_fitur(self.ev, self.bars, self.ctx, THETA)
         mb = mirror_bars(self.bars)
         f_pdl = hitung_fitur(mirror_event(self.ev), mb, build_context(mb), THETA)
         self.assertEqual(f_pdl["f01_jenis_level"], 0)
+        # f15 tidak bertanda d dan dihitung dari log return, yang tidak antisimetris terhadap cermin
+        # aritmetika harga (M - harga). Karena itu f15 hanya dicek rentangnya.
         for col in FEATURE_COLS:
-            if col == "f01_jenis_level":
+            if col in ("f01_jenis_level", "f15_pe48"):
                 continue
             if isinstance(f_pdh[col], str):
                 self.assertEqual(f_pdh[col], f_pdl[col], col)
             else:
                 self.assertAlmostEqual(f_pdh[col], f_pdl[col], places=9, msg=col)
+        for f in (f_pdh, f_pdl):
+            self.assertTrue(0.0 <= f["f15_pe48"] <= 1.0)
 
     def test_bar_masa_depan_tidak_berpengaruh(self):
         before = hitung_fitur(self.ev, self.bars, self.ctx, THETA)
@@ -250,11 +397,13 @@ class TestValidasiDanTepi(unittest.TestCase):
     def test_riwayat_pendek_menjadi_kosong(self):
         f = hitung_fitur(make_event(self.bars, 3, "PDL"), self.bars, self.ctx, THETA)
         for col in ("f06_rezim_volatilitas", "f07_momentum_pendekatan", "f11_jarak_ema50",
-                    "f15_volume_relatif"):
+                    "f14_cmf21_d", "f15_pe48"):
             self.assertIsNone(f[col], col)
-        self.assertIsNotNone(f["f14_engulfing_d"])
-        f0 = hitung_fitur(make_event(self.bars, 0, "PDH"), self.bars, self.ctx, THETA)
-        self.assertIsNone(f0["f14_engulfing_d"])
+        f20 = hitung_fitur(make_event(self.bars, 20, "PDH"), self.bars, self.ctx, THETA)
+        self.assertIsNotNone(f20["f14_cmf21_d"])          # 21 bar tersedia
+        self.assertIsNone(f20["f15_pe48"])
+        f48 = hitung_fitur(make_event(self.bars, 48, "PDH"), self.bars, self.ctx, THETA)
+        self.assertIsNotNone(f48["f15_pe48"])             # 49 close tersedia
 
     def test_split_harus_sesuai_tanggal(self):
         with self.assertRaises(ValueError):
@@ -283,9 +432,10 @@ class TestValidasiDanTepi(unittest.TestCase):
         rows = hitung_semua(events, self.bars, THETA)
         rec = reconciliation(rows)
         self.assertEqual((rec["dev_n"], rec["calib_n"]), (3, 0))
-        self.assertEqual(sum(rec[f"dev_f14_engulfing_d_{v}"] for v in (-1, 0, 1)), 3)
         self.assertEqual(sum(rec[k] for k in rec if k.startswith("dev_f04_sesi_")), 3)
-        self.assertEqual(rec["dev_null_f15_volume_relatif"], 0)
+        self.assertEqual((rec["dev_null_f14_cmf21_d"], rec["dev_null_f15_pe48"]), (0, 0))
+        self.assertAlmostEqual(rec["dev_sum_f15_pe48"], sum(r["f15_pe48"] for r in rows), places=6)
+        self.assertFalse([k for k in rec if "engulfing" in k or "volume_relatif" in k])
         self.assertEqual(rec["dev_b1_terpenuhi"], sum(r["b1_terpenuhi"] for r in rows))
         cuts = pilih_titik_potong(events, self.bars, dates=(events[1]["session_date"],))
         self.assertEqual(cuts, [int(events[1]["decision_bar_idx"]), len(self.bars) - 1])
@@ -344,6 +494,30 @@ class TestPrepareDanGuardAtr(unittest.TestCase):
         self.assertAlmostEqual(KUNCI.theta, THETA, places=9)
 
 
+class TestFiturSesuaiKunci(unittest.TestCase):
+    """Nama dan parameter fitur 13-15 di kode harus sama dengan Adendum 4 Kunci-1."""
+
+    def test_kunci_repo_cocok(self):
+        cek_kunci_fitur(KUNCI)
+        self.assertEqual([f["nama"] for f in KUNCI.fitur_tambahan], FEATURE_COLS[12:])
+
+    def test_kunci_menyimpang_ditolak(self):
+        f13, f14, f15 = KUNCI.fitur_tambahan
+        rusak = {
+            "nama": (f13, {**f14, "nama": "f14_engulfing_d"}, f15),
+            "jendela_cmf": (f13, {**f14, "jendela_bar": 20}, f15),
+            "tanda_cmf": (f13, {**f14, "bertanda_d": False}, f15),
+            "jendela_pe": (f13, f14, {**f15, "jendela_return": 24}),
+            "orde_pe": (f13, f14, {**f15, "orde_m": 4}),
+            "tunda_pe": (f13, f14, {**f15, "tunda": 2}),
+            "tanda_pe": (f13, f14, {**f15, "bertanda_d": True}),
+            "kurang_satu": (f13, f14),
+        }
+        for nama, tambahan in rusak.items():
+            with self.subTest(nama), self.assertRaises(kunci.KunciError):
+                cek_kunci_fitur(dataclasses.replace(KUNCI, fitur_tambahan=tambahan))
+
+
 class TestRunFitur(unittest.TestCase):
     def test_menulis_keluaran_dan_rekonsiliasi(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -357,8 +531,23 @@ class TestRunFitur(unittest.TestCase):
             self.assertEqual(recon["sumber_sha256"], sha)
             rows = common.load_model_csv(paths.data / "features_dev.csv")
             self.assertEqual([r["event_id"] for r in rows], [e["event_id"] for e in events])
+            self.assertTrue({"f14_cmf21_d", "f15_pe48"} <= set(rows[0]))
+            self.assertEqual(recon["kunci1_sha256_sesuai_manifest"],
+                             {n: KUNCI.manifest_sha256[n]
+                              for n in (kunci.FITUR_JSON, kunci.ADENDUM_FITUR_JSON)})
+            self.assertFalse({"f14_engulfing_d", "f15_volume_relatif"} & set(rows[0]))
             self.assertTrue((paths.output / "fitur_rekonsiliasi.json").exists())
             self.assertFalse((paths.input / "features_dev.csv").exists())
+
+    def test_kunci_fitur_menyimpang_tidak_menulis_apa_pun(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            paths = jalur.ModelPaths(Path(tmp) / "uji")
+            make_run(paths, n_sessions=40)
+            f13, f14, f15 = KUNCI.fitur_tambahan
+            k = dataclasses.replace(KUNCI, fitur_tambahan=(f13, {**f14, "jendela_bar": 20}, f15))
+            with self.assertRaises(kunci.KunciError):
+                run_fitur(paths, k, {})
+            self.assertFalse(paths.root.exists())
 
     def test_atr_kosong_tidak_menulis_apa_pun(self):
         with tempfile.TemporaryDirectory() as tmp:

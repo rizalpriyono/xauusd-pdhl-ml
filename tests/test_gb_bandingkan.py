@@ -175,7 +175,18 @@ class TestCli(unittest.TestCase):
                 rc, _, err = jalankan_cli("semua", "--config", CONFIG, "--runs-dir", tmp,
                                           "--tanpa-acuan", "--reference", str(Path(tmp) / "x"))
         self.assertEqual(rc, 0, err)
-        self.assertEqual(dipanggil, ["fitur", "pembanding", "walk-forward", "bandingkan"])
+        self.assertEqual(dipanggil, ["fitur", "pembanding", "walk-forward", "model-akhir",
+                                     "bandingkan"])
+
+    def test_model_akhir_tanpa_tahap_sebelumnya_gagal(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            paths = self._run(tmp)
+            rc, _, err = jalankan_cli("model-akhir", "--config", CONFIG, "--runs-dir", tmp,
+                                      "--reference", str(Path(tmp) / "x.json"), "--tanpa-acuan")
+            self.assertEqual(rc, 1)
+            self.assertIn("[galat] FileNotFoundError", err)
+            self.assertIn("fitur", err)
+            self.assertFalse(paths.model.exists())
 
     def test_tahap_tidak_dikenal(self):
         with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
